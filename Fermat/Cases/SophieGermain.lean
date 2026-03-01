@@ -585,12 +585,24 @@ theorem sophie_germain (p : ℕ) (hp : Nat.Prime p) (hp2 : p ≥ 3)
         exact hr.dvd_of_dvd_pow this
       exact absurd (hab.isUnit_of_dvd' hra hrb) hr.not_unit
     -- Fermat's little theorem: a+b ≡ c mod p, so p∤(c-b), p∤(c-a), p∤(a+b)
+    -- FLT little theorem: a^p ≡ a mod p. So a+b ≡ c mod p.
+    have hp_flt : (p : ℤ) ∣ (a + b - c) := by
+      haveI : Fact (Nat.Prime p) := ⟨hp⟩
+      have h1 : ((a + b - c : ℤ) : ZMod p) = 0 := by
+        have heq_z := congr_arg (Int.cast : ℤ → ZMod p) heq
+        push_cast at heq_z ⊢
+        rw [ZMod.pow_card, ZMod.pow_card, ZMod.pow_card] at heq_z
+        rw [sub_eq_zero]; exact heq_z
+      rwa [ZMod.intCast_zmod_eq_zero_iff_dvd] at h1
     have hp_ncb : ¬((p : ℤ) ∣ (c - b)) := by
       intro h; apply ha
-      -- c-b ≡ 0 mod p and a+b ≡ c mod p (FLT) → a ≡ 0 mod p. Contradicts p∤a.
-      sorry
-    have hp_nca : ¬((p : ℤ) ∣ (c - a)) := by intro h; apply hb; sorry
-    have hp_nab : ¬((p : ℤ) ∣ (a + b)) := by intro h; apply hc; sorry
+      have := dvd_add hp_flt h; rw [show a + b - c + (c - b) = a from by ring] at this; exact this
+    have hp_nca : ¬((p : ℤ) ∣ (c - a)) := by
+      intro h; apply hb
+      have := dvd_add hp_flt h; rw [show a + b - c + (c - a) = b from by ring] at this; exact this
+    have hp_nab : ¬((p : ℤ) ∣ (a + b)) := by
+      intro h; apply hc
+      have := dvd_sub h hp_flt; rw [show a + b - (a + b - c) = c from by ring] at this; exact this
     -- Three IsCoprime for factorizations (from IsCoprime a b + Case I + FLT little theorem)
     -- Each follows from isCoprime_sub_geom_sum: any common prime divides p*y^{p-1},
     -- but p∤(difference) and any r|y gives r|gcd(a,b,c), contradicting IsCoprime a b.
