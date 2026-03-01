@@ -38,8 +38,12 @@ open Fermat.Modularity
 -- ═══════════════════════════════════════════════════════════════════════════
 
 /-- An elliptic curve over ℚ is semistable if at every prime ℓ, the curve has
-either good reduction or multiplicative reduction (never additive). -/
-opaque IsSemistable (E : WeierstrassCurve ℚ) : Prop
+either good reduction or multiplicative reduction (never additive).
+
+Additive reduction at ℓ means ℓ divides both Δ and c₄ of the (minimal) model.
+Semistable thus means: no prime divides both invariants simultaneously. -/
+def IsSemistable (E : WeierstrassCurve ℚ) : Prop :=
+  ∀ (ℓ : ℕ), Nat.Prime ℓ → ¬((ℓ : ℚ) ∣ E.Δ ∧ (ℓ : ℚ) ∣ E.c₄)
 
 /-- An elliptic curve over ℚ is modular if there exists a weight-2 newform f
 such that L(E, s) = L(f, s). -/
