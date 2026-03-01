@@ -223,23 +223,19 @@ private theorem exactly_one_dvd_absurd (p : ℕ) (hp : Nat.Prime p) (hp2 : p ≥
       rcases mul_eq_zero.mp this with h | h
       · exact hp_nz h
       · exact hb_nz (pow_eq_zero_iff (by omega : p - 1 ≠ 0) |>.mp h)
-    -- PPP contradiction for Case A:
-    -- S ≡ p·b^{p-1} mod q, S ≠ 0 mod q.
-    -- S is a unit in ZMod q, so S^p ∈ {1,-1} (p-th power residue).
-    -- S^p ≡ (p·b^{p-1})^p = p^p · (b^p)^{p-1} = p^p (since (±1)^{p-1} = 1).
-    -- So p^p ∈ {1,-1} mod q. PPP says p^p ≠ 1.
-    -- Need: p^p ≠ -1 either, giving contradiction.
-    -- From q = 2p+1 and p^p ≡ -1: p^{2p} = (p^p)^2 = 1. This is Fermat.
-    -- So p^p = -1 is consistent with Fermat but contradicted by:
-    -- The PPP condition in our theorem is (p : ZMod q)^p ≠ 1.
-    -- We need the STRONGER condition (p : ZMod q)^p ≠ 1 ∧ (p : ZMod q)^p ≠ -1,
-    -- i.e., p is NOT a p-th power residue mod q at all.
-    -- With our PPP hypothesis (only ≠ 1), we cannot derive contradiction for Case A.
-    -- However, the original proof uses the THIRD factorization (a+b)·T₃ = c^p and the
-    -- analogous analysis at a+b to derive the contradiction.
-    -- For now, we observe that Case A is compatible with the PPP ≠ 1 condition and
-    -- redirect to the core argument using all three factorizations simultaneously.
-    -- The contradiction ultimately comes from the algebraic constraints being unsatisfiable.
+    -- CASE A CONTRADICTION via second factorization + ZMod analysis:
+    -- From (c-a) * T₂ = b^p where T₂ = geom_sum₂(c,a,p).
+    -- Since a ≡ 0 mod q: T₂ ≡ c^{p-1} mod q (only i=p-1 term survives).
+    -- Since c ≡ b mod q (Case A): T₂ ≡ b^{p-1} mod q.
+    -- b^{p-1} ≠ 0 since q ∤ b.
+    -- From (c-a)*T₂ = b^p: in ZMod q, c*b^{p-1} = b^p, i.e., c = b. ✓ (Case A)
+    -- Combined with the first factorization where S ≡ p*b^{p-1} ≢ 0:
+    -- The product (c-b)*S = a^p gives v_q(c-b)*v_q(S... etc.
+    -- The PPP contradiction requires coprime factorization over ℤ.
+    -- This step needs Int.eq_pow_of_mul_eq_pow_odd + IsCoprime (c-b) S.
+    -- IsCoprime (c-b) S holds if gcd(a,b,c) = 1 (coprime triple reduction).
+    -- Currently: our strong induction does not provide gcd = 1.
+    -- TODO: add gcd reduction layer to main theorem.
     sorry
   · -- Case B: q ∤ (c - b), so t ≠ 1 and ord(t) = p
     -- In ZMod q: Σ_{i<p} t^i = 0 (since t^p = 1, t ≠ 1, char q ∤ p)
