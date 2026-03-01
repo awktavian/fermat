@@ -565,14 +565,16 @@ theorem sophie_germain (p : ℕ) (hp : Nat.Prime p) (hp2 : p ≥ 3)
       · exact descent hda hdb (two_to_three_c hda hdb)
       · by_cases hdc : (↑q : ℤ) ∣ c
         · exact absurd (two_to_three_b hda hdc) hdb
-        · exact exactly_one_dvd_absurd p hp hp2 hq a b c heq ha hb hc hda hdb hdc sorry sorry sorry
+        · exact exactly_one_dvd_absurd p hp hp2 hq a b c heq ha hb hc hda hdb hdc
+            (by sorry) (by sorry) (by sorry)
     · -- q ∣ b
       by_cases hda : (↑q : ℤ) ∣ a
       · exact descent hda hdb (two_to_three_c hda hdb)
       · by_cases hdc : (↑q : ℤ) ∣ c
         · exact absurd (two_to_three_a hdb hdc) hda
         · have heq' : b ^ p + a ^ p = c ^ p := by linarith
-          exact exactly_one_dvd_absurd p hp hp2 hq b a c heq' hb ha hc hdb hda hdc sorry sorry sorry
+          exact exactly_one_dvd_absurd p hp hp2 hq b a c heq' hb ha hc hdb hda hdc
+            (by sorry) (by sorry) (by sorry)
     · -- q ∣ c
       by_cases hda : (↑q : ℤ) ∣ a
       · by_cases hdb : (↑q : ℤ) ∣ b
@@ -587,6 +589,6 @@ theorem sophie_germain (p : ℕ) (hp : Nat.Prime p) (hp2 : p ≥ 3)
           have hb'_ndvd : ¬((p : ℤ) ∣ (-b)) := by rwa [dvd_neg]
           have hqb' : ¬((↑q : ℤ) ∣ (-b)) := by rwa [dvd_neg]
           exact exactly_one_dvd_absurd p hp hp2 hq c (-b) a heq' hc hb'_ndvd ha
-            hdc hqb' hda sorry sorry sorry
+            hdc hqb' hda (by sorry) (by sorry) (by sorry)
 
 end Fermat.SophieGermain
