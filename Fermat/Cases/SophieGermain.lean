@@ -590,7 +590,16 @@ theorem sophie_germain (p : ℕ) (hp : Nat.Prime p) (hp2 : p ≥ 3)
       have hb_ne : b ≠ 0 := fun h => hb (h ▸ dvd_zero _)
       have hc_ne : c ≠ 0 := fun h => hc (h ▸ dvd_zero _)
       -- Size strictly decreases: |a/r| < |a| since |r| ≥ 2
-      have hr2 : r.natAbs ≥ 2 := by sorry -- Prime r → |r| ≥ 2, trivial
+      have hr2 : r.natAbs ≥ 2 := by
+        have h0 : r.natAbs ≠ 0 := Int.natAbs_ne_zero.mpr hr.ne_zero
+        have h1 : r.natAbs ≠ 1 := by
+          intro h
+          apply hr.not_unit
+          rw [Int.isUnit_iff]
+          cases Int.natAbs_eq r with
+          | inl h2 => left; omega
+          | inr h2 => right; omega
+        omega
       have hlt_a : a'.natAbs < a.natAbs := natAbs_ediv_lt_int hr2 ha_ne hra
       have hlt_b : b'.natAbs < b.natAbs := natAbs_ediv_lt_int hr2 hb_ne hrb
       have hlt_c : c'.natAbs < c.natAbs := natAbs_ediv_lt_int hr2 hc_ne hrc
@@ -636,9 +645,24 @@ theorem sophie_germain (p : ℕ) (hp : Nat.Prime p) (hp2 : p ≥ 3)
     -- Three IsCoprime for factorizations (from IsCoprime a b + Case I + FLT little theorem)
     -- Each follows from isCoprime_sub_geom_sum: any common prime divides p*y^{p-1},
     -- but p∤(difference) and any r|y gives r|gcd(a,b,c), contradicting IsCoprime a b.
-    have hcop_cb : IsCoprime (c - b) (∑ i ∈ Finset.range p, c ^ i * b ^ (p - 1 - i)) := by sorry
-    have hcop_ca : IsCoprime (c - a) (∑ i ∈ Finset.range p, c ^ i * a ^ (p - 1 - i)) := by sorry
-    have hcop_ab : IsCoprime (a + b) (∑ i ∈ Finset.range p, a ^ i * (-b) ^ (p - 1 - i)) := by sorry
+    have hcop_cb : IsCoprime (c - b) (∑ i ∈ Finset.range p, c ^ i * b ^ (p - 1 - i)) :=
+      isCoprime_sub_geom_sum hp hp_ncb
+        (fun r hr hrcb hrb => by
+          -- hrcb : r ∣ (c-b), hrb : r ∣ b
+          have hrc : r ∣ c := by { have := dvd_add hrb hrcb; rw [show b + (c - b) = c from by ring] at this; exact this }
+          have hra : r ∣ a := hr.dvd_of_dvd_pow (by rw [show a^p = c^p - b^p from by linarith]; exact dvd_sub (dvd_pow hrc hp_ne) (dvd_pow hrb hp_ne))
+          exact absurd (hab.isUnit_of_dvd' hra hrb) hr.not_unit)
+        (by sorry)
+    have hcop_ca : IsCoprime (c - a) (∑ i ∈ Finset.range p, c ^ i * a ^ (p - 1 - i)) :=
+      isCoprime_sub_geom_sum hp hp_nca
+        (fun r hr hrca hra => by
+          -- hrca : r ∣ (c-a), hra : r ∣ a
+          have hrc : r ∣ c := by { have := dvd_add hra hrca; rw [show a + (c - a) = c from by ring] at this; exact this }
+          have hrb : r ∣ b := hr.dvd_of_dvd_pow (by rw [show b^p = c^p - a^p from by linarith]; exact dvd_sub (dvd_pow hrc hp_ne) (dvd_pow hra hp_ne))
+          exact absurd (hab.isUnit_of_dvd' hra hrb) hr.not_unit)
+        (by sorry)
+    have hcop_ab : IsCoprime (a + b) (∑ i ∈ Finset.range p, a ^ i * (-b) ^ (p - 1 - i)) := by
+      sorry -- same pattern as hcop_cb; dvd_neg coercion issue with -b
     -- Step 5: Main case split
     rcases hq_dvd with hda | hdb | hdc
     · -- q ∣ a
