@@ -652,7 +652,12 @@ theorem sophie_germain (p : ℕ) (hp : Nat.Prime p) (hp2 : p ≥ 3)
           have hrc : r ∣ c := by { have := dvd_add hrb hrcb; rw [show b + (c - b) = c from by ring] at this; exact this }
           have hra : r ∣ a := hr.dvd_of_dvd_pow (by rw [show a^p = c^p - b^p from by linarith]; exact dvd_sub (dvd_pow hrc hp_ne) (dvd_pow hrb hp_ne))
           exact absurd (hab.isUnit_of_dvd' hra hrb) hr.not_unit)
-        (by sorry)
+        (by intro ⟨h1, _⟩
+            have h3 : (c - b) * (∑ i ∈ Finset.range p, c ^ i * b ^ (p - 1 - i)) = a ^ p := by
+              rw [(Commute.all c b).mul_geom_sum₂]; linarith
+            rw [h1, zero_mul] at h3
+            have ha0 : a = 0 := by rwa [eq_comm, pow_eq_zero_iff hp_ne] at h3
+            exact ha (ha0 ▸ dvd_zero _))
     have hcop_ca : IsCoprime (c - a) (∑ i ∈ Finset.range p, c ^ i * a ^ (p - 1 - i)) :=
       isCoprime_sub_geom_sum hp hp_nca
         (fun r hr hrca hra => by
@@ -660,7 +665,12 @@ theorem sophie_germain (p : ℕ) (hp : Nat.Prime p) (hp2 : p ≥ 3)
           have hrc : r ∣ c := by { have := dvd_add hra hrca; rw [show a + (c - a) = c from by ring] at this; exact this }
           have hrb : r ∣ b := hr.dvd_of_dvd_pow (by rw [show b^p = c^p - a^p from by linarith]; exact dvd_sub (dvd_pow hrc hp_ne) (dvd_pow hra hp_ne))
           exact absurd (hab.isUnit_of_dvd' hra hrb) hr.not_unit)
-        (by sorry)
+        (by intro ⟨h1, _⟩
+            have h3 : (c - a) * (∑ i ∈ Finset.range p, c ^ i * a ^ (p - 1 - i)) = b ^ p := by
+              rw [(Commute.all c a).mul_geom_sum₂]; linarith
+            rw [h1, zero_mul] at h3
+            have hb0 : b = 0 := by rwa [eq_comm, pow_eq_zero_iff hp_ne] at h3
+            exact hb (hb0 ▸ dvd_zero _))
     have hcop_ab : IsCoprime (a + b) (∑ i ∈ Finset.range p, a ^ i * (-b) ^ (p - 1 - i)) := by
       sorry -- same pattern as hcop_cb; dvd_neg coercion issue with -b
     -- Step 5: Main case split
