@@ -476,17 +476,24 @@ The proof establishes:
 theorem sophie_germain (p : ℕ) (hp : Nat.Prime p) (hp2 : p ≥ 3)
     (hq : Nat.Prime (2 * p + 1)) :
     FLT_CaseI p := by
-  -- We prove by strong induction on |a| + |b| + |c| that no Case I solution exists.
+  -- Reduce to coprime triples, then prove by strong induction.
   suffices key : ∀ (N : ℕ) (a b c : ℤ),
       a.natAbs + b.natAbs + c.natAbs ≤ N →
       ¬((p : ℤ) ∣ a) → ¬((p : ℤ) ∣ b) → ¬((p : ℤ) ∣ c) →
+      IsCoprime a b →
       a ^ p + b ^ p ≠ c ^ p by
     intro a b c ha hb hc
-    exact key _ a b c le_rfl ha hb hc
+    -- Reduce to coprime: divide by gcd(a,b)
+    by_cases hab : IsCoprime a b
+    · exact key _ a b c le_rfl ha hb hc hab
+    · -- If ¬IsCoprime a b, there exists a common prime factor.
+      -- Divide it out and recurse. Standard reduction.
+      -- For now: the coprime case is the core; this reduction is structural.
+      sorry
   intro N
   induction N using Nat.strongRecOn with
   | ind N ih =>
-    intro a b c hN ha hb hc heq
+    intro a b c hN ha hb hc hab heq
     haveI : Fact (Nat.Prime (2 * p + 1)) := ⟨hq⟩
     set q := 2 * p + 1 with hq_def
     have hp_ne : p ≠ 0 := Nat.Prime.ne_zero hp
@@ -557,7 +564,39 @@ theorem sophie_germain (p : ℕ) (hp : Nat.Prime p) (hp2 : p ≥ 3)
       have hlt : a'.natAbs + b'.natAbs + c'.natAbs < a.natAbs + b.natAbs + c.natAbs := by
         omega
       exact ih (a'.natAbs + b'.natAbs + c'.natAbs) (by omega) a' b' c' le_rfl
-        ha'_ndvd hb'_ndvd hc'_ndvd heq'
+        ha'_ndvd hb'_ndvd hc'_ndvd sorry heq'
+    -- Derive pairwise coprimality from IsCoprime a b + equation
+    have hac : IsCoprime a c := by
+      apply isCoprime_of_prime_dvd (by intro ⟨ha0, _⟩; exact ha (ha0 ▸ dvd_zero _))
+      intro r hr hra hrc
+      have hrb : r ∣ b := by
+        have : r ∣ b ^ p := by
+          have : b ^ p = c ^ p - a ^ p := by linarith
+          rw [this]; exact dvd_sub (dvd_pow hrc hp_ne) (dvd_pow hra hp_ne)
+        exact hr.dvd_of_dvd_pow this
+      exact absurd (hab.isUnit_of_dvd' hra hrb) hr.not_unit
+    have hbc : IsCoprime b c := by
+      apply isCoprime_of_prime_dvd (by intro ⟨hb0, _⟩; exact hb (hb0 ▸ dvd_zero _))
+      intro r hr hrb hrc
+      have hra : r ∣ a := by
+        have : r ∣ a ^ p := by
+          have : a ^ p = c ^ p - b ^ p := by linarith
+          rw [this]; exact dvd_sub (dvd_pow hrc hp_ne) (dvd_pow hrb hp_ne)
+        exact hr.dvd_of_dvd_pow this
+      exact absurd (hab.isUnit_of_dvd' hra hrb) hr.not_unit
+    -- Fermat's little theorem: a+b ≡ c mod p, so p∤(c-b), p∤(c-a), p∤(a+b)
+    have hp_ncb : ¬((p : ℤ) ∣ (c - b)) := by
+      intro h; apply ha
+      -- c-b ≡ 0 mod p and a+b ≡ c mod p (FLT) → a ≡ 0 mod p. Contradicts p∤a.
+      sorry
+    have hp_nca : ¬((p : ℤ) ∣ (c - a)) := by intro h; apply hb; sorry
+    have hp_nab : ¬((p : ℤ) ∣ (a + b)) := by intro h; apply hc; sorry
+    -- Three IsCoprime for factorizations (from IsCoprime a b + Case I + FLT little theorem)
+    -- Each follows from isCoprime_sub_geom_sum: any common prime divides p*y^{p-1},
+    -- but p∤(difference) and any r|y gives r|gcd(a,b,c), contradicting IsCoprime a b.
+    have hcop_cb : IsCoprime (c - b) (∑ i ∈ Finset.range p, c ^ i * b ^ (p - 1 - i)) := by sorry
+    have hcop_ca : IsCoprime (c - a) (∑ i ∈ Finset.range p, c ^ i * a ^ (p - 1 - i)) := by sorry
+    have hcop_ab : IsCoprime (a + b) (∑ i ∈ Finset.range p, a ^ i * (-b) ^ (p - 1 - i)) := by sorry
     -- Step 5: Main case split
     rcases hq_dvd with hda | hdb | hdc
     · -- q ∣ a
@@ -566,7 +605,7 @@ theorem sophie_germain (p : ℕ) (hp : Nat.Prime p) (hp2 : p ≥ 3)
       · by_cases hdc : (↑q : ℤ) ∣ c
         · exact absurd (two_to_three_b hda hdc) hdb
         · exact exactly_one_dvd_absurd p hp hp2 hq a b c heq ha hb hc hda hdb hdc
-            (by sorry) (by sorry) (by sorry)
+            hcop_cb hcop_ca hcop_ab
     · -- q ∣ b
       by_cases hda : (↑q : ℤ) ∣ a
       · exact descent hda hdb (two_to_three_c hda hdb)
@@ -574,7 +613,7 @@ theorem sophie_germain (p : ℕ) (hp : Nat.Prime p) (hp2 : p ≥ 3)
         · exact absurd (two_to_three_a hdb hdc) hda
         · have heq' : b ^ p + a ^ p = c ^ p := by linarith
           exact exactly_one_dvd_absurd p hp hp2 hq b a c heq' hb ha hc hdb hda hdc
-            (by sorry) (by sorry) (by sorry)
+            hcop_ca hcop_cb (by sorry)
     · -- q ∣ c
       by_cases hda : (↑q : ℤ) ∣ a
       · by_cases hdb : (↑q : ℤ) ∣ b
@@ -589,6 +628,6 @@ theorem sophie_germain (p : ℕ) (hp : Nat.Prime p) (hp2 : p ≥ 3)
           have hb'_ndvd : ¬((p : ℤ) ∣ (-b)) := by rwa [dvd_neg]
           have hqb' : ¬((↑q : ℤ) ∣ (-b)) := by rwa [dvd_neg]
           exact exactly_one_dvd_absurd p hp hp2 hq c (-b) a heq' hc hb'_ndvd ha
-            hdc hqb' hda (by sorry) (by sorry) (by sorry)
+            hdc hqb' hda (by sorry) (by sorry) (by sorry) -- third call site: (c,-b,a) coprime
 
 end Fermat.SophieGermain
