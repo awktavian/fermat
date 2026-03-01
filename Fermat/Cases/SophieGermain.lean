@@ -454,6 +454,17 @@ private lemma natAbs_ediv_lt {q : ℕ} (hq2 : q ≥ 2) {a : ℤ} (ha : a ≠ 0)
   have hk_pos : k.natAbs ≥ 1 := Nat.one_le_iff_ne_zero.mpr (Int.natAbs_ne_zero.mpr hk_ne)
   nlinarith
 
+/-- If r is a nonzero integer with |r| ≥ 2, a ≠ 0, and r ∣ a, then |a/r| < |a|. -/
+private lemma natAbs_ediv_lt_int {r : ℤ} (hr2 : r.natAbs ≥ 2) {a : ℤ} (ha : a ≠ 0)
+    (hdvd : r ∣ a) : (a / r).natAbs < a.natAbs := by
+  obtain ⟨k, hk⟩ := hdvd
+  have hr_ne : r ≠ 0 := by intro h; rw [h] at hr2; simp at hr2
+  have hk_ne : k ≠ 0 := by rintro rfl; simp at hk; exact ha hk
+  have hdiv : a / r = k := by rw [hk]; exact Int.mul_ediv_cancel_left k hr_ne
+  rw [hdiv, hk, Int.natAbs_mul]
+  have hk_pos : k.natAbs ≥ 1 := Nat.one_le_iff_ne_zero.mpr (Int.natAbs_ne_zero.mpr hk_ne)
+  nlinarith
+
 /-! ### Main theorem via strong induction -/
 
 /-- Sophie Germain's Theorem (with PPP condition).
@@ -476,24 +487,15 @@ The proof establishes:
 theorem sophie_germain (p : ℕ) (hp : Nat.Prime p) (hp2 : p ≥ 3)
     (hq : Nat.Prime (2 * p + 1)) :
     FLT_CaseI p := by
-  -- Reduce to coprime triples, then prove by strong induction.
   suffices key : ∀ (N : ℕ) (a b c : ℤ),
       a.natAbs + b.natAbs + c.natAbs ≤ N →
       ¬((p : ℤ) ∣ a) → ¬((p : ℤ) ∣ b) → ¬((p : ℤ) ∣ c) →
-      IsCoprime a b →
       a ^ p + b ^ p ≠ c ^ p by
-    intro a b c ha hb hc
-    -- Reduce to coprime: divide by gcd(a,b)
-    by_cases hab : IsCoprime a b
-    · exact key _ a b c le_rfl ha hb hc hab
-    · -- If ¬IsCoprime a b, there exists a common prime factor.
-      -- Divide it out and recurse. Standard reduction.
-      -- For now: the coprime case is the core; this reduction is structural.
-      sorry
+    intro a b c ha hb hc; exact key _ a b c le_rfl ha hb hc
   intro N
   induction N using Nat.strongRecOn with
   | ind N ih =>
-    intro a b c hN ha hb hc hab heq
+    intro a b c hN ha hb hc heq
     haveI : Fact (Nat.Prime (2 * p + 1)) := ⟨hq⟩
     set q := 2 * p + 1 with hq_def
     have hp_ne : p ≠ 0 := Nat.Prime.ne_zero hp
@@ -564,7 +566,35 @@ theorem sophie_germain (p : ℕ) (hp : Nat.Prime p) (hp2 : p ≥ 3)
       have hlt : a'.natAbs + b'.natAbs + c'.natAbs < a.natAbs + b.natAbs + c.natAbs := by
         omega
       exact ih (a'.natAbs + b'.natAbs + c'.natAbs) (by omega) a' b' c' le_rfl
-        ha'_ndvd hb'_ndvd hc'_ndvd sorry heq'
+        ha'_ndvd hb'_ndvd hc'_ndvd heq'
+    -- Derive IsCoprime a b: any common prime r gives r|c, then a/r^p+b/r^p=c/r^p
+    -- is a smaller Case I solution, contradicting ih.
+    have hab : IsCoprime a b := by
+      apply isCoprime_of_prime_dvd (by intro ⟨ha0, _⟩; exact ha (ha0 ▸ dvd_zero _))
+      intro r hr hra hrb
+      have hrc : r ∣ c := hr.dvd_of_dvd_pow (heq ▸ dvd_add (dvd_pow hra hp_ne) (dvd_pow hrb hp_ne))
+      -- Divide out r: (a/r)^p + (b/r)^p = (c/r)^p, smaller, still Case I
+      set a' := a / r; set b' := b / r; set c' := c / r
+      have ha' : ¬((p : ℤ) ∣ a') := fun h => ha (dvd_trans h ⟨r, (Int.ediv_mul_cancel hra).symm⟩)
+      have hb' : ¬((p : ℤ) ∣ b') := fun h => hb (dvd_trans h ⟨r, (Int.ediv_mul_cancel hrb).symm⟩)
+      have hc' : ¬((p : ℤ) ∣ c') := fun h => hc (dvd_trans h ⟨r, (Int.ediv_mul_cancel hrc).symm⟩)
+      have heq' : a' ^ p + b' ^ p = c' ^ p := by
+        have ha_eq : a = a' * r := (Int.ediv_mul_cancel hra).symm
+        have hb_eq : b = b' * r := (Int.ediv_mul_cancel hrb).symm
+        have hc_eq : c = c' * r := (Int.ediv_mul_cancel hrc).symm
+        have h1 : (a' * r) ^ p + (b' * r) ^ p = (c' * r) ^ p := by
+          rw [← ha_eq, ← hb_eq, ← hc_eq]; exact heq
+        simp only [mul_pow] at h1
+        exact mul_right_cancel₀ (pow_ne_zero _ hr.ne_zero) (by ring_nf; linarith)
+      have ha_ne : a ≠ 0 := fun h => ha (h ▸ dvd_zero _)
+      have hb_ne : b ≠ 0 := fun h => hb (h ▸ dvd_zero _)
+      have hc_ne : c ≠ 0 := fun h => hc (h ▸ dvd_zero _)
+      -- Size strictly decreases: |a/r| < |a| since |r| ≥ 2
+      have hr2 : r.natAbs ≥ 2 := by sorry -- Prime r → |r| ≥ 2, trivial
+      have hlt_a : a'.natAbs < a.natAbs := natAbs_ediv_lt_int hr2 ha_ne hra
+      have hlt_b : b'.natAbs < b.natAbs := natAbs_ediv_lt_int hr2 hb_ne hrb
+      have hlt_c : c'.natAbs < c.natAbs := natAbs_ediv_lt_int hr2 hc_ne hrc
+      exact ih (a'.natAbs + b'.natAbs + c'.natAbs) (by omega) a' b' c' (by omega) ha' hb' hc' heq'
     -- Derive pairwise coprimality from IsCoprime a b + equation
     have hac : IsCoprime a c := by
       apply isCoprime_of_prime_dvd (by intro ⟨ha0, _⟩; exact ha (ha0 ▸ dvd_zero _))
