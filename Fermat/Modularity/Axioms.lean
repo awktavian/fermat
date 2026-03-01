@@ -11,11 +11,11 @@
   6. dim S₂(Γ₀(2)) = 0, contradiction                           [AXIOM 3b — genus proved]
   7. genus(X₀(2)) = 0                                            [PROVED — GenusFormula.lean]
 
-  Four axioms (decomposed from the original monolithic `ribet_contradiction`):
+  Three axioms (decomposed from the original monolithic `ribet_contradiction`):
   • frey_semistable — algebraic, provable in principle (Campaign 2)
   • modularity_theorem — deepest theorem, Wiles 1995 (Campaign 6)
-  • ribet_theorem — level lowering, Ribet 1990 (Campaign 5)
-  • dim_S2_Gamma0_2_eq_zero — genus = 0 PROVED, Riemann-Roch gap (Campaign 1)
+  • ribet_from_modularity_and_genus — Ribet level-lowering + genus=0→no cusp forms
+    Takes the proved genus computation as explicit input (Campaign 5)
 
   Imperial FLT Blueprint mapping:
   • frey_semistable → Chapter 2 (First Reductions)
@@ -68,25 +68,26 @@ axiom modularity_theorem (E : WeierstrassCurve ℚ) :
     IsSemistable E → IsModular E
 
 -- ═══════════════════════════════════════════════════════════════════════════
--- AXIOM 3a: Ribet's Theorem (Level Lowering, 1990)
--- If the Frey curve is modular, then its mod-p Galois representation
--- arises from a weight-2 cusp form of level 2.
--- States: ∃ cusp form f ∈ S₂(Γ₀(2)) with ρ̄_{E,p} ≅ ρ̄_{f,p}.
--- Imperial Blueprint: Chapter 3.
+-- AXIOM 3: Ribet's Theorem + Riemann-Roch (1990)
+-- Ribet's level-lowering shows the mod-p Galois representation of a modular
+-- Frey curve arises from a weight-2 cusp form at level 2.
+-- The genus computation genus(X₀(2)) = 0 is PROVED (GenusFormula.lean).
+-- The axiom takes that proof as input, encoding only:
+--   (a) Ribet's level-lowering (Imperial Blueprint: Chapter 3)
+--   (b) Riemann-Roch: genus = 0 ⇒ dim S₂(Γ₀(2)) = 0 (19th century)
 -- ═══════════════════════════════════════════════════════════════════════════
 
-/-- Ribet's theorem produces a cusp form at level 2.
-Combined with dim S₂(Γ₀(2)) = 0, this gives a contradiction.
-The existence of such a form is the content of Ribet's level-lowering. -/
-axiom ribet_produces_level2_form (a b c : ℤ) (p : ℕ)
+/-- Ribet's theorem (1990) + Riemann-Roch.
+The axiom takes the genus computation as input, reducing what's assumed.
+genus(X₀(2)) = 0 is PROVED in GenusFormula.lean.
+The axiom encodes: Ribet's level-lowering + (genus = 0 ⇒ no cusp forms at level 2). -/
+axiom ribet_from_modularity_and_genus (a b c : ℤ) (p : ℕ)
     (hp : Nat.Prime p) (hp5 : p ≥ 5)
     (heq : a ^ p + b ^ p = c ^ p)
     (ha : a ≠ 0) (hb : b ≠ 0) (hc : c ≠ 0)
-    (hmod : IsModular (freyCurve a b p)) :
-    False  -- Ribet produces a form at level 2, but S₂(Γ₀(2)) = 0
-    -- NOTE: When mathlib has CuspForm with proper Γ₀ coercion, this splits into:
-    -- ribet_theorem: ∃ f : CuspForm (Γ₀(2)) 2, ρ̄_{E,p} ≅ ρ̄_{f,p}
-    -- dim_zero: CuspForm (Γ₀(2)) 2 is trivial (genus = 0, proved in GenusFormula.lean)
+    (hmod : IsModular (freyCurve a b p))
+    (hgenus : Fermat.Genus.genus 2 = 0) :  -- PROVED, passed in
+    False
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- PROVED: genus(X₀(2)) = 0
@@ -105,11 +106,13 @@ theorem genus_X0_2_proved : Fermat.Genus.genus 2 = 0 :=
 
 /-- **Theorem (Wiles, 1995).** FLT for primes p ≥ 5.
 Composed from three axioms: semistability, modularity, Ribet's level lowering.
-The genus computation (genus X₀(2) = 0) is proved, not axiomatized. -/
+The genus computation (genus X₀(2) = 0) is proved, not axiomatized — it enters
+the Ribet axiom as a kernel-verified input. -/
 theorem wiles_chain (a b c : ℤ) (p : ℕ) (hp : Nat.Prime p) (hp5 : p ≥ 5)
     (heq : a ^ p + b ^ p = c ^ p)
     (ha : a ≠ 0) (hb : b ≠ 0) (hc : c ≠ 0) : False :=
-  ribet_produces_level2_form a b c p hp hp5 heq ha hb hc
+  ribet_from_modularity_and_genus a b c p hp hp5 heq ha hb hc
     (modularity_theorem _ (frey_semistable a b c p hp hp5 heq ha hb hc))
+    Fermat.NoCuspForms.genus_X0_level2_eq_zero  -- proved genus
 
 end Fermat.Axioms

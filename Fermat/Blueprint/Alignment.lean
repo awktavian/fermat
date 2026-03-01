@@ -13,7 +13,7 @@
   Axioms (3):
     frey_semistable           Axioms.lean:52    Frey curve is semistable
     modularity_theorem        Axioms.lean:62    Semistable ⇒ modular (Wiles)
-    ribet_produces_level2_form Axioms.lean:75   Modular Frey ⇒ ⊥ (Ribet + S₂=0)
+    ribet_from_modularity_and_genus Axioms.lean:84   Modular Frey + genus=0 ⇒ ⊥
 
   Opaques (2):
     IsSemistable              Axioms.lean:40    Semistability predicate
@@ -53,7 +53,7 @@
   The Wiles chain composes three axioms:
     frey_semistable           : counterexample → semistable Frey curve
     modularity_theorem        : semistable → modular
-    ribet_produces_level2_form: modular Frey → ⊥ (no level-2 cusp forms)
+    ribet_from_modularity_and_genus: modular Frey + genus=0 → ⊥ (genus proved, passed in)
 
   ═══════════════════════════════════════════════════════════════════════════
 
@@ -98,7 +98,7 @@
     over ℚ are modular.              Ch 5 (Automorphic Forms)    effort
                                      Ch 7 (Langlands)
 
-  ribet_produces_level2_form         Ch 3 (p-torsion)            Hard
+  ribet_from_modularity_and_genus         Ch 3 (p-torsion)            Hard
     Modular Frey curve → ⊥.          §3.1 Reducibility            Requires
     Combines two sub-results:        +  S₂(Γ₀(2)) = 0            Galois rep
     (a) Ribet level-lowering              (genus proved,           theory
@@ -108,7 +108,7 @@
 
   AXIOM DECOMPOSITION DETAIL
 
-  ribet_produces_level2_form is a composite axiom encoding two facts:
+  ribet_from_modularity_and_genus is a composite axiom encoding two facts:
 
   (a) Ribet's theorem (1990): modular Frey curve at level N has mod-p
       Galois representation arising from a weight-2 cusp form at level 2.
@@ -140,7 +140,7 @@
      • Algebraic curve structure on X₀(N)
      • Identification of S₂ with holomorphic differentials
      • Riemann-Roch for compact Riemann surfaces
-     Currently absorbed into the ribet_produces_level2_form axiom.
+     Currently absorbed into the ribet_from_modularity_and_genus axiom.
 
   3. IsSemistable / IsModular are opaque
      Full definitions require scheme-theoretic elliptic curve theory
@@ -163,7 +163,7 @@
 
   Priority for axiom replacement (most likely first):
     1. frey_semistable — algebraic, bounded scope, Ch 2 is active
-    2. ribet_produces_level2_form — 1990 mathematics, well-understood
+    2. ribet_from_modularity_and_genus — 1990 mathematics, well-understood
        (further accelerated if Riemann-Roch enters mathlib, splitting the axiom)
     3. modularity_theorem — deepest, will be last (Wiles 1995, BCDT 2001)
        Imperial cannot yet state this; Chapters 4-7 are years of work
