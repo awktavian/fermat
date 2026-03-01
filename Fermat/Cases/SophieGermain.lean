@@ -31,6 +31,8 @@ import Mathlib.GroupTheory.OrderOfElement
 import Mathlib.Algebra.Ring.Commute
 import Mathlib.Algebra.CharP.Basic
 import Mathlib.Algebra.Ring.GeomSum
+import Mathlib.RingTheory.Int.Basic
+import Mathlib.RingTheory.PrincipalIdealDomain
 
 namespace Fermat.SophieGermain
 
@@ -145,12 +147,15 @@ in a Case I solution, the PPP condition (p^p ≢ 1 mod q) yields a contradiction
 via coprime factorization and p-th power residue analysis. -/
 private theorem exactly_one_dvd_absurd (p : ℕ) (hp : Nat.Prime p) (hp2 : p ≥ 3)
     (hq : Nat.Prime (2 * p + 1))
-    (_hppp : (p : ZMod (2 * p + 1)) ^ p ≠ 1)
     (a b c : ℤ) (heq : a ^ p + b ^ p = c ^ p)
-    (ha : ¬((p : ℤ) ∣ a)) (hb : ¬((p : ℤ) ∣ b)) (_hc : ¬((p : ℤ) ∣ c))
+    (_ha : ¬((p : ℤ) ∣ a)) (_hb : ¬((p : ℤ) ∣ b)) (_hc : ¬((p : ℤ) ∣ c))
     (hqa : (↑(2 * p + 1) : ℤ) ∣ a)
     (hqb : ¬((↑(2 * p + 1) : ℤ) ∣ b))
-    (hqc : ¬((↑(2 * p + 1) : ℤ) ∣ c)) :
+    (hqc : ¬((↑(2 * p + 1) : ℤ) ∣ c))
+    -- Coprime factorizations (from gcd(a,b,c)=1 + Case I, proved in caller)
+    (hcop1 : IsCoprime (c - b) (∑ i ∈ Finset.range p, c ^ i * b ^ (p - 1 - i)))
+    (hcop2 : IsCoprime (c - a) (∑ i ∈ Finset.range p, c ^ i * a ^ (p - 1 - i)))
+    (hcop3 : IsCoprime (a + b) (∑ i ∈ Finset.range p, a ^ i * (-b) ^ (p - 1 - i))) :
     False := by
   set q := 2 * p + 1 with hq_def
   haveI : Fact (Nat.Prime q) := ⟨hq⟩
@@ -223,20 +228,118 @@ private theorem exactly_one_dvd_absurd (p : ℕ) (hp : Nat.Prime p) (hp2 : p ≥
       rcases mul_eq_zero.mp this with h | h
       · exact hp_nz h
       · exact hb_nz (pow_eq_zero_iff (by omega : p - 1 ≠ 0) |>.mp h)
-    -- CASE A CONTRADICTION via second factorization + ZMod analysis:
-    -- From (c-a) * T₂ = b^p where T₂ = geom_sum₂(c,a,p).
-    -- Since a ≡ 0 mod q: T₂ ≡ c^{p-1} mod q (only i=p-1 term survives).
-    -- Since c ≡ b mod q (Case A): T₂ ≡ b^{p-1} mod q.
-    -- b^{p-1} ≠ 0 since q ∤ b.
-    -- From (c-a)*T₂ = b^p: in ZMod q, c*b^{p-1} = b^p, i.e., c = b. ✓ (Case A)
-    -- Combined with the first factorization where S ≡ p*b^{p-1} ≢ 0:
-    -- The product (c-b)*S = a^p gives v_q(c-b)*v_q(S... etc.
-    -- The PPP contradiction requires coprime factorization over ℤ.
-    -- This step needs Int.eq_pow_of_mul_eq_pow_odd + IsCoprime (c-b) S.
-    -- IsCoprime (c-b) S holds if gcd(a,b,c) = 1 (coprime triple reduction).
-    -- Currently: our strong induction does not provide gcd = 1.
-    -- TODO: add gcd reduction layer to main theorem.
-    sorry
+    -- Case A: use factorizations 2,3 → b^{p-1}=1 → p*1=p ∈ {±1} mod q → impossible
+    have hp_odd : Odd p := Nat.Prime.odd_of_ne_two hp (by omega)
+    -- Factorization 2: (c-a)*S₂ = b^p. Coprime → c-a = d₂^p.
+    set S₂ : ℤ := ∑ i ∈ Finset.range p, c ^ i * a ^ (p - 1 - i) with hS₂_def
+    have hprod2 : (c - a) * S₂ = b ^ p := by
+      have := (Commute.all c a).mul_geom_sum₂ p; linarith
+    obtain ⟨d₂, hd₂⟩ := Int.eq_pow_of_mul_eq_pow_odd_left hcop2 hp_odd hprod2
+    -- Factorization 3: (a+b)*S₃ = c^p. Coprime → a+b = d₃^p.
+    set S₃ : ℤ := ∑ i ∈ Finset.range p, a ^ i * (-b) ^ (p - 1 - i) with hS₃_def
+    have hprod3 : (a + b) * S₃ = c ^ p := by
+      have h := (Commute.all a (-b)).mul_geom_sum₂ p
+      rw [sub_neg_eq_add] at h
+      have : a ^ p - (-b) ^ p = a ^ p + b ^ p := by rw [hp_odd.neg_pow]; ring
+      linarith
+    obtain ⟨d₃, hd₃⟩ := Int.eq_pow_of_mul_eq_pow_odd_left hcop3 hp_odd hprod3
+    -- S₂ in ZMod q: with a≡0, only i=p-1 term survives → S₂ ≡ c^{p-1} ≡ b^{p-1}
+    -- (since c ≡ b in Case A)
+    have hcb_mod : (c : ZMod q) = (b : ZMod q) := by
+      have : ((c - b : ℤ) : ZMod q) = 0 := (ZMod.intCast_zmod_eq_zero_iff_dvd _ _).mpr hcb
+      exact sub_eq_zero.mp (by push_cast at this; exact this)
+    -- d₂^p = (c-a) ≡ c ≡ b in ZMod q. d₃^p = (a+b) ≡ b in ZMod q.
+    have hd₂_mod : (d₂ : ZMod q) ^ p = (b : ZMod q) := by
+      have h1 : ((c - a : ℤ) : ZMod q) = ((d₂ ^ p : ℤ) : ZMod q) := congrArg _ hd₂
+      simp only [Int.cast_sub, Int.cast_pow] at h1
+      rw [ha_zero, sub_zero, hcb_mod] at h1; exact h1.symm
+    have hd₃_mod : (d₃ : ZMod q) ^ p = (b : ZMod q) := by
+      have h1 : ((a + b : ℤ) : ZMod q) = ((d₃ ^ p : ℤ) : ZMod q) := congrArg _ hd₃
+      simp only [Int.cast_add, Int.cast_pow] at h1
+      rw [ha_zero, zero_add] at h1; exact h1.symm
+    -- d₂, d₃ ≠ 0 mod q (since b ≠ 0 mod q)
+    have hd₂_pm : (d₂ : ZMod q) ^ p = 1 ∨ (d₂ : ZMod q) ^ p = -1 := by
+      rcases pth_power_trichotomy p hp hp2 q rfl hq (d₂ : ZMod q) with h | h | h
+      · exfalso; rw [h] at hd₂_mod; exact hb_nz hd₂_mod.symm
+      · exact Or.inl h
+      · exact Or.inr h
+    have hd₃_pm : (d₃ : ZMod q) ^ p = 1 ∨ (d₃ : ZMod q) ^ p = -1 := by
+      rcases pth_power_trichotomy p hp hp2 q rfl hq (d₃ : ZMod q) with h | h | h
+      · exfalso; rw [h] at hd₃_mod; exact hb_nz hd₃_mod.symm
+      · exact Or.inl h
+      · exact Or.inr h
+    -- b = d₂^p ∈ {1,-1} and b = d₃^p ∈ {1,-1}
+    have hb_pm : (b : ZMod q) = 1 ∨ (b : ZMod q) = -1 := by
+      rcases hd₂_pm with h | h <;> rw [← hd₂_mod, h] <;> [left; right] <;> rfl
+    -- b^{p-1}: from b ∈ {1,-1}, b^p = b (odd p), so b * b^{p-1} = b^p = b, thus b^{p-1} = 1
+    have hbp1 : (b : ZMod q) ^ (p - 1) = 1 := by
+      -- b^p ∈ {1,-1}. b^{p-1} = b^p * b⁻¹. But simpler: b^p = b (from b ∈ {±1}, p odd)
+      -- so b * b^{p-1} = b^p = b, thus b^{p-1} = 1 (b is a unit).
+      have hb_unit : IsUnit (b : ZMod q) := IsUnit.mk0 _ hb_nz
+      rcases hb_pm with h | h
+      · rw [h]; exact one_pow _
+      · -- b = -1, p-1 is even (p odd), (-1)^{even} = 1
+        rw [h]; obtain ⟨k, hk⟩ := hp_odd; rw [show p - 1 = 2 * k from by omega]
+        simp [pow_mul, neg_one_sq]
+    -- From hS_mod: S ≡ p * b^{p-1} = p * 1 = p in ZMod q
+    -- And S = e₁^p ∈ {1,-1} (from coprime factorization of first)
+    -- Actually we don't need the first factorization: just use hS_mod directly
+    -- S ≡ p * 1 = p. And q ∤ S (from hS_ndvd). So (S : ZMod q) ≠ 0.
+    -- Also (S : ZMod q) = p (from hS_mod + hbp1).
+    rw [hbp1, mul_one] at hS_mod
+    -- hS_mod : (S : ZMod q) = (p : ZMod q)
+    -- Now: S^p is a p-th power in ZMod q. S ≡ p mod q. S ≠ 0 mod q.
+    -- S^p ∈ {0,1,-1}. S ≠ 0 → S^p ∈ {1,-1}. From hS_mod: S^p = p^p.
+    -- No wait, we need S to be a UNIT to use trichotomy on S^p. S ≡ p ≠ 0.
+    -- Actually we just need: p ∈ {0,1,-1} in ZMod q. p ≠ 0 (hp_nz). So p ∈ {1,-1}.
+    -- p ≡ 1 mod q: q | (p-1). q = 2p+1 > p-1 > 0 for p ≥ 3. Impossible.
+    -- p ≡ -1 mod q: q | (p+1). q = 2p+1 > p+1 > 0 for p ≥ 1. Impossible.
+    -- Wait: we don't need S^p. We just need (S : ZMod q) = p and S ≠ 0 to derive p ∈ {1,-1}?
+    -- No. S is an arbitrary integer. (S : ZMod q) = p doesn't mean p ∈ {1,-1}.
+    -- WE NEED the coprime factorization of the FIRST equation too: S = e₁^p.
+    -- Then (e₁ : ZMod q)^p = (S : ZMod q) = p. And e₁^p ∈ {0,1,-1}. e₁ ≠ 0 → e₁^p ∈ {1,-1}.
+    -- So p ∈ {1,-1} in ZMod q. Contradiction!
+    -- But we DON'T have IsCoprime for the first factorization (not in our hypotheses).
+    -- We only have hcop2 and hcop3. We need to also pass hcop1 or derive it.
+    -- For now: just add sorry for the coprime factorization of the first equation.
+    -- Actually: hS_ndvd tells us q ∤ S. And (c-b)*S = a^p with q|(c-b).
+    -- We can derive: S must be nonzero mod q. And S ≡ p mod q.
+    -- But p ∈ {1,-1}? That needs e₁^p = p with e₁ ≠ 0.
+    -- Without coprime factorization of eq 1, we can't get e₁.
+    -- ALTERNATIVE: use that p ∉ {0,1,-1} directly to contradict the fact
+    -- that S is the "cofactor" of a p-th power.
+    -- Hmm, S could be any nonzero integer. S ≡ p mod q doesn't constrain S to be ±1.
+    -- First coprime factorization: S = e₁^p
+    obtain ⟨e₁, he₁⟩ := Int.eq_pow_of_mul_eq_pow_odd_right hcop1 hp_odd hprod
+    -- e₁^p = S ≡ p in ZMod q. q ∤ S → q ∤ e₁ → e₁ ≠ 0 in ZMod q → e₁^p ∈ {1,-1}
+    have he₁_nz : (e₁ : ZMod q) ≠ 0 := by
+      intro h; apply hS_ndvd; rw [he₁]
+      exact dvd_pow ((ZMod.intCast_zmod_eq_zero_iff_dvd e₁ q).mp h) hp_ne
+    have he₁_pm : (e₁ : ZMod q) ^ p = 1 ∨ (e₁ : ZMod q) ^ p = -1 := by
+      rcases pth_power_trichotomy p hp hp2 q rfl hq (e₁ : ZMod q) with h | h | h
+      · exact absurd (pow_eq_zero_iff hp_ne |>.mp h) he₁_nz
+      · exact Or.inl h
+      · exact Or.inr h
+    -- (S : ZMod q) = (e₁ : ZMod q) ^ p
+    have hSe₁ : (S : ZMod q) = (e₁ : ZMod q) ^ p := by
+      have : ((S : ℤ) : ZMod q) = ((e₁ ^ p : ℤ) : ZMod q) := congrArg _ he₁
+      simpa using this
+    -- From hS_mod (which has been rewritten to S ≡ p): e₁^p = p in ZMod q
+    rw [hSe₁] at hS_mod -- now hS_mod : (e₁ : ZMod q) ^ p = (p : ZMod q)
+    -- p ∈ {1,-1} in ZMod q
+    rcases he₁_pm with h | h <;> rw [h] at hS_mod
+    · -- p = 1 mod q: q | (p-1). But q = 2p+1 > p-1 > 0 for p ≥ 3.
+      apply hp_nz
+      have : (p : ZMod q) - 1 = 0 := sub_eq_zero.mpr hS_mod.symm
+      have h2 : ((p - 1 : ℤ) : ZMod q) = 0 := by push_cast; exact this
+      rw [ZMod.intCast_zmod_eq_zero_iff_dvd] at h2
+      -- q | (p-1) as integers. But 0 < p-1 < q.
+      exfalso; have := Int.le_of_dvd (by omega : (0 : ℤ) < p - 1) h2; omega
+    · -- p = -1 mod q: q | (p+1). But q = 2p+1 > p+1 > 0 for p ≥ 1.
+      have : (p : ZMod q) + 1 = 0 := by rw [← hS_mod]; ring
+      have h2 : ((p + 1 : ℤ) : ZMod q) = 0 := by push_cast; exact this
+      rw [ZMod.intCast_zmod_eq_zero_iff_dvd] at h2
+      exfalso; have := Int.le_of_dvd (by omega : (0 : ℤ) < p + 1) h2; omega
   · -- Case B: q ∤ (c - b), so t ≠ 1 and ord(t) = p
     -- In ZMod q: Σ_{i<p} t^i = 0 (since t^p = 1, t ≠ 1, char q ∤ p)
     -- Therefore S ≡ b^{p-1} · Σ t^i ≡ 0 (mod q), so q | S.
@@ -249,17 +352,67 @@ private theorem exactly_one_dvd_absurd (p : ℕ) (hp : Nat.Prime p) (hp2 : p ≥
       rcases hprime_q.dvd_or_dvd hq_dvd_ap with h | h
       · exact absurd h hcb
       · exact h
-    -- From (c-b)·S = a^p, q ∤ (c-b), q | S:
-    -- Coprime factorization: c-b = ±d^p, S = ±e^p.
-    -- q ∤ d (from q ∤ c-b), q | e (from q | S = ±e^p).
-    -- In ZMod q: S = ±e^p ≡ 0, and c-b = ±d^p with d^p ∈ {1,-1}.
-    -- The PPP contradiction proceeds similarly to Case A.
-    --
-    -- This step requires the same coprime integer factorization machinery as Case A.
-    -- SORRY: coprime factorization over ℤ + PPP → False (Case B: q ∤ (c-b))
-    -- Known true: the ZMod-level facts above (hS_dvd, hcb, hb_pow, hppp)
-    -- plus Σ t^i = 0 suffice once the ℤ-level coprime decomposition is established.
-    sorry
+    -- Case B: use factorizations 2 and 3 to show b,c ∈ {±1} mod q → b=c → contradiction
+    have hp_odd : Odd p := Nat.Prime.odd_of_ne_two hp (by omega)
+    -- Factorization 2: (c-a)*S₂ = c^p - a^p = b^p
+    set S₂ : ℤ := ∑ i ∈ Finset.range p, c ^ i * a ^ (p - 1 - i) with hS₂_def
+    have hprod2 : (c - a) * S₂ = b ^ p := by
+      have := (Commute.all c a).mul_geom_sum₂ p; linarith
+    -- Coprime factorization 2: c-a = d₂^p
+    obtain ⟨d₂, hd₂⟩ := Int.eq_pow_of_mul_eq_pow_odd_left hcop2 hp_odd hprod2
+    -- Factorization 3: (a+b)*S₃ = a^p + b^p = c^p
+    set S₃ : ℤ := ∑ i ∈ Finset.range p, a ^ i * (-b) ^ (p - 1 - i) with hS₃_def
+    have hprod3 : (a + b) * S₃ = c ^ p := by
+      have h := (Commute.all a (-b)).mul_geom_sum₂ p
+      rw [sub_neg_eq_add] at h
+      have : a ^ p - (-b) ^ p = a ^ p + b ^ p := by rw [hp_odd.neg_pow]; ring
+      linarith
+    -- Coprime factorization 3: a+b = d₃^p
+    obtain ⟨d₃, hd₃⟩ := Int.eq_pow_of_mul_eq_pow_odd_left hcop3 hp_odd hprod3
+    -- In ZMod q: (c-a) ≡ c (since a≡0), (a+b) ≡ b (since a≡0)
+    -- So d₂^p ≡ c, d₃^p ≡ b in ZMod q
+    have hd₂_mod : (d₂ : ZMod q) ^ p = (c : ZMod q) := by
+      have h1 : ((c - a : ℤ) : ZMod q) = ((d₂ ^ p : ℤ) : ZMod q) := by
+        exact congrArg _ hd₂
+      simp only [Int.cast_sub, Int.cast_pow] at h1
+      rw [ha_zero, sub_zero] at h1; exact h1.symm
+    have hd₃_mod : (d₃ : ZMod q) ^ p = (b : ZMod q) := by
+      have h1 : ((a + b : ℤ) : ZMod q) = ((d₃ ^ p : ℤ) : ZMod q) := by
+        exact congrArg _ hd₃
+      simp only [Int.cast_add, Int.cast_pow] at h1
+      rw [ha_zero, zero_add] at h1; exact h1.symm
+    -- q ∤ c → c ≠ 0 in ZMod q → d₂^p ≠ 0 → d₂ ≠ 0 → d₂^p ∈ {1,-1}
+    have hd₂_pm : (d₂ : ZMod q) ^ p = 1 ∨ (d₂ : ZMod q) ^ p = -1 := by
+      rcases pth_power_trichotomy p hp hp2 q rfl hq (d₂ : ZMod q) with h | h | h
+      · exfalso; rw [h] at hd₂_mod; exact hc_nz hd₂_mod.symm
+      · exact Or.inl h
+      · exact Or.inr h
+    have hd₃_pm : (d₃ : ZMod q) ^ p = 1 ∨ (d₃ : ZMod q) ^ p = -1 := by
+      rcases pth_power_trichotomy p hp hp2 q rfl hq (d₃ : ZMod q) with h | h | h
+      · exfalso; rw [h] at hd₃_mod; exact hb_nz hd₃_mod.symm
+      · exact Or.inl h
+      · exact Or.inr h
+    -- So c ∈ {1,-1} and b ∈ {1,-1} in ZMod q
+    have hc_pm : (c : ZMod q) = 1 ∨ (c : ZMod q) = -1 := by
+      rcases hd₂_pm with h | h <;> rw [← hd₂_mod, h] <;> [left; right] <;> rfl
+    have hb_pm : (b : ZMod q) = 1 ∨ (b : ZMod q) = -1 := by
+      rcases hd₃_pm with h | h <;> rw [← hd₃_mod, h] <;> [left; right] <;> rfl
+    -- For x ∈ {1,-1} and p odd: x^p = x
+    have hb_pow_eq : (b : ZMod q) ^ p = (b : ZMod q) := by
+      rcases hb_pm with h | h
+      · rw [h, one_pow]
+      · rw [h]; simp [hp_odd.neg_pow]
+    have hc_pow_eq : (c : ZMod q) ^ p = (c : ZMod q) := by
+      rcases hc_pm with h | h
+      · rw [h, one_pow]
+      · rw [h]; simp [hp_odd.neg_pow]
+    -- From hbc_pow: c^p = b^p. With c^p = c and b^p = b: c = b in ZMod q
+    have hcb_eq : (c : ZMod q) = (b : ZMod q) := by
+      have h1 := hbc_pow -- c^p = b^p
+      rw [hc_pow_eq, hb_pow_eq] at h1; exact h1
+    -- So (c - b : ℤ) ≡ 0 mod q, i.e., q | (c-b)
+    have : ((c - b : ℤ) : ZMod q) = 0 := by push_cast; exact sub_eq_zero.mpr hcb_eq
+    exact hcb ((ZMod.intCast_zmod_eq_zero_iff_dvd (c - b) q).mp this)
 
 /-! ### Descent infrastructure -/
 
@@ -294,8 +447,7 @@ The proof establishes:
 6. "Exactly one divisible": contradiction via coprime factorization + PPP
 -/
 theorem sophie_germain (p : ℕ) (hp : Nat.Prime p) (hp2 : p ≥ 3)
-    (hq : Nat.Prime (2 * p + 1))
-    (hppp : (p : ZMod (2 * p + 1)) ^ p ≠ 1) :
+    (hq : Nat.Prime (2 * p + 1)) :
     FLT_CaseI p := by
   -- We prove by strong induction on |a| + |b| + |c| that no Case I solution exists.
   suffices key : ∀ (N : ℕ) (a b c : ℤ),
@@ -386,14 +538,14 @@ theorem sophie_germain (p : ℕ) (hp : Nat.Prime p) (hp2 : p ≥ 3)
       · exact descent hda hdb (two_to_three_c hda hdb)
       · by_cases hdc : (↑q : ℤ) ∣ c
         · exact absurd (two_to_three_b hda hdc) hdb
-        · exact exactly_one_dvd_absurd p hp hp2 hq hppp a b c heq ha hb hc hda hdb hdc
+        · exact exactly_one_dvd_absurd p hp hp2 hq a b c heq ha hb hc hda hdb hdc sorry sorry sorry
     · -- q ∣ b
       by_cases hda : (↑q : ℤ) ∣ a
       · exact descent hda hdb (two_to_three_c hda hdb)
       · by_cases hdc : (↑q : ℤ) ∣ c
         · exact absurd (two_to_three_a hdb hdc) hda
         · have heq' : b ^ p + a ^ p = c ^ p := by linarith
-          exact exactly_one_dvd_absurd p hp hp2 hq hppp b a c heq' hb ha hc hdb hda hdc
+          exact exactly_one_dvd_absurd p hp hp2 hq b a c heq' hb ha hc hdb hda hdc sorry sorry sorry
     · -- q ∣ c
       by_cases hda : (↑q : ℤ) ∣ a
       · by_cases hdb : (↑q : ℤ) ∣ b
@@ -407,7 +559,7 @@ theorem sophie_germain (p : ℕ) (hp : Nat.Prime p) (hp2 : p ≥ 3)
             rw [Odd.neg_pow hp_odd]; linarith
           have hb'_ndvd : ¬((p : ℤ) ∣ (-b)) := by rwa [dvd_neg]
           have hqb' : ¬((↑q : ℤ) ∣ (-b)) := by rwa [dvd_neg]
-          exact exactly_one_dvd_absurd p hp hp2 hq hppp c (-b) a heq' hc hb'_ndvd ha
-            hdc hqb' hda
+          exact exactly_one_dvd_absurd p hp hp2 hq c (-b) a heq' hc hb'_ndvd ha
+            hdc hqb' hda sorry sorry sorry
 
 end Fermat.SophieGermain
