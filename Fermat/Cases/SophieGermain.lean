@@ -33,6 +33,7 @@ import Mathlib.Algebra.CharP.Basic
 import Mathlib.Algebra.Ring.GeomSum
 import Mathlib.RingTheory.Int.Basic
 import Mathlib.RingTheory.PrincipalIdealDomain
+import Mathlib.NumberTheory.Multiplicity
 
 namespace Fermat.SophieGermain
 
@@ -118,6 +119,32 @@ private lemma int_dvd_of_zmod_pow_eq_zero {q : ℕ} (hq : Nat.Prime q)
   rw [show (a : ZMod q) ^ p = ((a ^ p : ℤ) : ZMod q) from by push_cast; ring] at h
   rw [ZMod.intCast_zmod_eq_zero_iff_dvd] at h
   exact hprime_int.dvd_of_dvd_pow h
+
+/-! ### Coprimality of linear factor and geometric sum -/
+
+/-- If p ∤ (x-y) and every prime dividing both (x-y) and b also divides some
+auxiliary quantity (from gcd = 1), then (x-y) and geom_sum₂(x,y,p) are coprime.
+This uses: any common prime r divides p * y^{p-1} (by dvd_geom_sum₂_iff_of_dvd_sub);
+r ≠ p (since p ∤ (x-y)); so r | y, which the caller rules out. -/
+private lemma isCoprime_sub_geom_sum {p : ℕ} (hp : Nat.Prime p)
+    {x y : ℤ} (hpxy : ¬((p : ℤ) ∣ (x - y)))
+    (hno_common : ∀ r : ℤ, Prime r → r ∣ (x - y) → r ∣ y → False)
+    (hne : ¬(x - y = 0 ∧ ∑ i ∈ Finset.range p, x ^ i * y ^ (p - 1 - i) = 0)) :
+    IsCoprime (x - y) (∑ i ∈ Finset.range p, x ^ i * y ^ (p - 1 - i)) := by
+  apply isCoprime_of_prime_dvd hne
+  intro r hr hrxy hrS
+  -- r | (x-y) and r | S. By dvd_geom_sum₂_iff_of_dvd_sub (with divisor = r):
+  -- r | S ↔ r | p * y^{p-1}  (since r | (x-y))
+  have hr_dvd_py : r ∣ (p : ℤ) * y ^ (p - 1) :=
+    (_root_.dvd_geom_sum₂_iff_of_dvd_sub (n := p) hrxy).mp hrS
+  -- r prime, so r | p or r | y^{p-1}
+  rcases hr.dvd_or_dvd hr_dvd_py with h | h
+  · -- r | p. Since both r and p are prime: r is associated to p.
+    -- So p | (x-y), contradicting hpxy.
+    have hassoc := hr.associated_of_dvd (Nat.prime_iff_prime_int.mp hp) h
+    exact absurd (hassoc.dvd_iff_dvd_left.mp hrxy) hpxy
+  · -- r | y^{p-1} → r | y (r prime)
+    exact hno_common r hr hrxy (hr.dvd_of_dvd_pow h)
 
 /-! ### The hard case: exactly one divisible by q
 
