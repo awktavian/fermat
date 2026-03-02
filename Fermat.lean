@@ -11,4 +11,6 @@ import Fermat.Modularity.Axioms
 import Fermat.Modularity.FLT
 import Fermat.GaloisRep.Basic
 import Fermat.GaloisRep.EllipticCurve
+import Fermat.GaloisRep.Conductor
 import Fermat.ModularForms.RiemannRoch
+import Fermat.ModularForms.Newform
