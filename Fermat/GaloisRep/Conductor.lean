@@ -13,6 +13,7 @@
 
 import Fermat.GaloisRep.EllipticCurve
 import Mathlib.Data.Nat.PrimeFin
+import Mathlib.Data.Nat.Factorization.Basic
 
 set_option linter.dupNamespace false
 
@@ -47,7 +48,7 @@ theorem radical_pos {n : ℕ} (_ : n ≠ 0) : 0 < radical n := by
   exact Nat.pos_of_mem_primeFactors hp
 
 theorem radical_dvd {n : ℕ} (_hn : n ≠ 0) : radical n ∣ n := by
-  sorry -- Each prime factor divides n; product of coprime divisors divides n.
+  unfold radical; exact Nat.prod_primeFactors_dvd n
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- §2. Conductor of the Frey Curve

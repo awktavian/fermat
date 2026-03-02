@@ -81,10 +81,11 @@ This is a standard result in the theory of automorphic forms: the space
 of cusp forms of any weight and level is finite-dimensional. -/
 axiom cusp_forms_finite (N : ℕ) : Module.Finite ℂ (CuspFormSpace N 2)
 
-/-- **Axiom (Freeness of cusp form spaces).**
-The space S₂(Γ₀(N)) is a free ℂ-module (automatic for vector spaces
-over a field, but stated as an axiom to interface with Module.finrank). -/
-axiom cusp_forms_free (N : ℕ) : Module.Free ℂ (CuspFormSpace N 2)
+/-- **Theorem (Freeness of cusp form spaces).**
+The space S₂(Γ₀(N)) is a free ℂ-module. This is automatic: every module
+over a division ring (hence every ℂ-vector space) is free. -/
+noncomputable instance cusp_forms_free (N : ℕ) : Module.Free ℂ (CuspFormSpace N 2) :=
+  Module.Free.of_divisionRing ℂ (CuspFormSpace N 2)
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- Step 4: dim S₂(Γ₀(2)) = 0
@@ -124,16 +125,20 @@ theorem cusp_form_level2_eq_zero (f : CuspFormSpace 2 2) : f = 0 := by
   • dim S₂(Γ₀(2)) = 0                        [this file, from axiom + genus]
   • ∀ f ∈ S₂(Γ₀(2)), f = 0                   [this file, from dim = 0]
 
-  AXIOMS (3):
+  AXIOMS (2):
   • dim_cusp_forms_weight2: dim S₂(Γ₀(N)) = genus(X₀(N))
     Classical Riemann-Roch. When mathlib formalizes this for compact Riemann
     surfaces and identifies S₂ with holomorphic differentials, this axiom
     becomes a theorem.
 
   • cusp_forms_finite: S₂(Γ₀(N)) is Module.Finite ℂ
-  • cusp_forms_free: S₂(Γ₀(N)) is Module.Free ℂ
-    Standard finite-dimensionality of cusp form spaces. These become theorems
+    Standard finite-dimensionality of cusp form spaces. Becomes a theorem
     once mathlib has the general finiteness result for automorphic forms.
+
+  PROVED (was axiom):
+  • cusp_forms_free: S₂(Γ₀(N)) is Module.Free ℂ
+    Every module over a division ring is free (Module.Free.of_divisionRing).
+    ℂ is a field, hence a division ring. Automatic from mathlib.
 
   COERCION (sorry-free):
   • Gamma0_GL: Γ₀(N) ⊂ SL₂(ℤ) → GL₂(ℝ) via mapGL ℝ
