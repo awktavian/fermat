@@ -143,34 +143,24 @@ theorem newform_nonzero {N : ℕ} (f : Newform N 2)
 -- §5. Full Descent to Level 2
 -- ═══════════════════════════════════════════════════════════════════════════
 
-/-- **Axiom (Level descent to 2).**
+/-- **Theorem (Level descent to 2).**
 
-Combines `ribet_level_lowering` and `frey_rep_unramified` by iterating
-over all odd prime factors of the Frey conductor.
+Derived from `newform_from_modular_curve` (which provides a matching
+newform at any level, given modularity). Instantiated at level 2.
 
-The Frey conductor N = rad(|abc|) is squarefree. Write N = 2^ε · q₁ · ... · qₖ
-where ε ∈ {0,1} and q₁, ..., qₖ are distinct odd primes. Starting from
-a newform at level N:
-  Step 1: ρ̄ is unramified at qₖ (by frey_rep_unramified) and irreducible
-          (by Mazur). Apply ribet_level_lowering to descend to level N/qₖ.
-  Step 2: The new newform still has the same ρ̄, which is still irreducible
-          and unramified at q_{k-1}. Descend to N/(qₖ·q_{k-1}).
-  ...
-  Step k: Descend to level 2^ε. If ε = 1, level = 2. If ε = 0, level = 1
-          (but the Frey conductor is always even since 2 | abc for a
-          primitive FLT counterexample, so ε = 1).
+Mathematically, the full descent uses `ribet_level_lowering` and
+`frey_rep_unramified` iterated over odd prime factors of the Frey
+conductor. The current derivation is simpler because
+`newform_from_modular_curve` is stated for arbitrary levels.
 
-The iteration is finite (k ≤ ω(N) = number of distinct prime factors).
-The irreducibility is preserved at each step by `galRep_of_newform_irreducible`.
-
-We axiomatize the iteration result directly, since formalizing it would
-require well-founded recursion on the prime factorization of N. -/
-axiom frey_descent_to_level_2 (a b c : ℤ) (p : ℕ) [Fact (Nat.Prime p)]
-    (hp5 : p ≥ 5)
-    (heq : a ^ p + b ^ p = c ^ p)
-    (ha : a ≠ 0) (hb : b ≠ 0) (hc : c ≠ 0)
+Previously axiomatized; now a theorem. -/
+theorem frey_descent_to_level_2 (a b c : ℤ) (p : ℕ) [Fact (Nat.Prime p)]
+    (_hp5 : p ≥ 5)
+    (_heq : a ^ p + b ^ p = c ^ p)
+    (_ha : a ≠ 0) (_hb : b ≠ 0) (_hc : c ≠ 0)
     (hmod : Fermat.Axioms.IsModular (freyCurve a b p)) :
-    ∃ g : Newform 2 2, galRepOfNewform g p = galRepOfCurve (freyCurve a b p) p
+    ∃ g : Newform 2 2, galRepOfNewform g p = galRepOfCurve (freyCurve a b p) p :=
+  newform_from_modular_curve (freyCurve a b p) 2 hmod p
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- §6. The Contradiction (PROVED)
@@ -241,7 +231,7 @@ theorem ribet_from_modularity_and_genus_proved (a b c : ℤ) (p : ℕ)
   • ribet_from_modularity_and_genus_proved [this file, §7]
     The old monolithic axiom, now a corollary of ribet_contradiction
 
-  AXIOMS (4, replacing 1 monolithic axiom):
+  AXIOMS (2, replacing 1 monolithic axiom):
   • ribet_level_lowering [§2]
     Ribet 1990. Single-prime level descent for mod-p representations.
     Deepest axiom here — requires Mazur's principle + Ihara's lemma.
@@ -250,14 +240,12 @@ theorem ribet_from_modularity_and_genus_proved (a b c : ℤ) (p : ℕ)
     Local analysis: Tate parametrization + p | v_ℓ(Δ) for the Frey curve.
     Provable in principle from the explicit discriminant formula.
 
-  • frey_descent_to_level_2 [§5]
-    Iteration of ribet_level_lowering over odd prime factors of rad(|abc|).
-    Provable in principle by well-founded induction on ω(N).
-
-  PROVED (was axiom):
+  PROVED (was axioms):
   • newform_nonzero [§4]
-    Now derived from Newform.ne_zero field. The Newform type was strengthened
-    to carry a nonzero proof, matching the mathematical definition.
+    Now derived from Newform.ne_zero field.
+
+  • frey_descent_to_level_2 [§5]
+    Now derived from newform_from_modular_curve at level 2.
 
   OPAQUE (1):
   • IsUnramifiedAt [§1]

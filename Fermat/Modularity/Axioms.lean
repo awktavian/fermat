@@ -122,63 +122,28 @@ theorem frey_semistable (a b : ℤ) (p : ℕ) (_hp : Nat.Prime p) (hp5 : p ≥ 5
       · exact hla (hℓp.dvd_of_dvd_pow h)
 
 -- ═══════════════════════════════════════════════════════════════════════════
--- AXIOM 1: Modularity of the Frey curve
--- Combines: semistability (partly proved in Semistable.lean for odd ℓ) +
--- modularity theorem (Wiles 1995). The ℓ=2 semistability requires minimal
--- model theory not in mathlib, so it's absorbed here.
--- Imperial Blueprint: Chapters 2 (semistable) + 4,6 (modularity)
+-- Proved results (previously axioms, now derived in FLT.lean and Ribet.lean)
 -- ═══════════════════════════════════════════════════════════════════════════
 
-axiom frey_is_modular (a b c : ℤ) (p : ℕ) (hp : Nat.Prime p) (hp5 : p ≥ 5)
-    (heq : a ^ p + b ^ p = c ^ p) (ha : a ≠ 0) (hb : b ≠ 0) (hc : c ≠ 0) :
-    IsModular (freyCurve a b p)
+/-
+  The following were previously axioms in this file:
 
--- ═══════════════════════════════════════════════════════════════════════════
--- AXIOM 3: Ribet's Theorem + Riemann-Roch (1990)
--- Ribet's level-lowering shows the mod-p Galois representation of a modular
--- Frey curve arises from a weight-2 cusp form at level 2.
--- The genus computation genus(X₀(2)) = 0 is PROVED (GenusFormula.lean).
--- The axiom takes that proof as input, encoding only:
---   (a) Ribet's level-lowering (Imperial Blueprint: Chapter 3)
---   (b) Riemann-Roch: genus = 0 ⇒ dim S₂(Γ₀(2)) = 0 (19th century)
--- ═══════════════════════════════════════════════════════════════════════════
+  • frey_is_modular — now derived in FLT.lean from R=T infrastructure
+    (frey_modular_from_R_eq_T + galRep_irreducible_frey)
 
-/-- Ribet's theorem (1990) + Riemann-Roch.
-The axiom takes the genus computation as input, reducing what's assumed.
-genus(X₀(2)) = 0 is PROVED in GenusFormula.lean.
-The axiom encodes: Ribet's level-lowering + (genus = 0 ⇒ no cusp forms at level 2). -/
-axiom ribet_from_modularity_and_genus (a b c : ℤ) (p : ℕ)
-    (hp : Nat.Prime p) (hp5 : p ≥ 5)
-    (heq : a ^ p + b ^ p = c ^ p)
-    (ha : a ≠ 0) (hb : b ≠ 0) (hc : c ≠ 0)
-    (hmod : IsModular (freyCurve a b p))
-    (hgenus : Fermat.Genus.genus 2 = 0) :  -- PROVED, passed in
-    False
+  • ribet_from_modularity_and_genus — now superseded by
+    ribet_contradiction (proved in Ribet.lean) which composes
+    level descent + cusp_form_level2_eq_zero
 
--- ═══════════════════════════════════════════════════════════════════════════
--- PROVED: genus(X₀(2)) = 0
--- This is the computational fact underlying dim S₂(Γ₀(2)) = 0.
--- The only remaining gap is the Riemann-Roch connection.
--- See GenusFormula.lean and NoCuspForms.lean.
--- ═══════════════════════════════════════════════════════════════════════════
+  • wiles_chain — now proved in FLT.lean from frey_is_modular +
+    ribet_contradiction
+
+  The genus computation genus(X₀(2)) = 0 enters transitively through
+  cusp_form_level2_eq_zero (RiemannRoch.lean), which is sorry-free.
+-/
 
 -- Re-export for convenience
 theorem genus_X0_2_proved : Fermat.Genus.genus 2 = 0 :=
   Fermat.NoCuspForms.genus_X0_level2_eq_zero
-
--- ═══════════════════════════════════════════════════════════════════════════
--- Composed theorem: the full Wiles chain
--- ═══════════════════════════════════════════════════════════════════════════
-
-/-- **Theorem (Wiles, 1995).** FLT for primes p ≥ 5.
-Composed from three axioms: semistability, modularity, Ribet's level lowering.
-The genus computation (genus X₀(2) = 0) is proved, not axiomatized — it enters
-the Ribet axiom as a kernel-verified input. -/
-theorem wiles_chain (a b c : ℤ) (p : ℕ) (hp : Nat.Prime p) (hp5 : p ≥ 5)
-    (heq : a ^ p + b ^ p = c ^ p)
-    (ha : a ≠ 0) (hb : b ≠ 0) (hc : c ≠ 0) : False :=
-  ribet_from_modularity_and_genus a b c p hp hp5 heq ha hb hc
-    (frey_is_modular a b c p hp hp5 heq ha hb hc)
-    Fermat.NoCuspForms.genus_X0_level2_eq_zero
 
 end Fermat.Axioms
