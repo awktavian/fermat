@@ -672,7 +672,22 @@ theorem sophie_germain (p : ℕ) (hp : Nat.Prime p) (hp2 : p ≥ 3)
             have hb0 : b = 0 := by rwa [eq_comm, pow_eq_zero_iff hp_ne] at h3
             exact hb (hb0 ▸ dvd_zero _))
     have hcop_ab : IsCoprime (a + b) (∑ i ∈ Finset.range p, a ^ i * (-b) ^ (p - 1 - i)) := by
-      sorry -- same pattern as hcop_cb; dvd_neg coercion issue with -b
+      rw [show a + b = a - (-b) from by ring]
+      apply isCoprime_sub_geom_sum hp (by rw [show a - -b = a + b from by ring]; exact hp_nab)
+      · intro r hr hrab hrb_neg
+        have hrb : r ∣ b := by rwa [show (-b : ℤ) = -b from rfl, dvd_neg] at hrb_neg
+        have hra : r ∣ a := by
+          have h1 : r ∣ (a - -b + -b) := dvd_add hrab (dvd_neg.mpr hrb)
+          rw [show a - -b + -b = a from by ring] at h1; exact h1
+        exact absurd (hab.isUnit_of_dvd' hra hrb) hr.not_unit
+      · intro ⟨h1, _⟩; rw [show a - -b = a + b from by ring] at h1
+        have hp_odd := Nat.Prime.odd_of_ne_two hp (by omega)
+        have h3 : (a + b) * (∑ i ∈ Finset.range p, a ^ i * (-b) ^ (p - 1 - i)) = c ^ p := by
+          rw [show a + b = a - (-b) from by ring, (Commute.all a (-b)).mul_geom_sum₂]
+          rw [show a ^ p - (-b) ^ p = a ^ p + b ^ p from by rw [hp_odd.neg_pow]; ring]; linarith
+        rw [h1, zero_mul] at h3
+        have hc0 : c = 0 := by rwa [eq_comm, pow_eq_zero_iff hp_ne] at h3
+        exact hc (hc0 ▸ dvd_zero _)
     -- Step 5: Main case split
     rcases hq_dvd with hda | hdb | hdc
     · -- q ∣ a
@@ -688,8 +703,26 @@ theorem sophie_germain (p : ℕ) (hp : Nat.Prime p) (hp2 : p ≥ 3)
       · by_cases hdc : (↑q : ℤ) ∣ c
         · exact absurd (two_to_three_a hdb hdc) hda
         · have heq' : b ^ p + a ^ p = c ^ p := by linarith
+          have hcop_ba : IsCoprime (b + a) (∑ i ∈ Finset.range p, b ^ i * (-a) ^ (p - 1 - i)) := by
+            rw [show b + a = b - (-a) from by ring]
+            apply isCoprime_sub_geom_sum hp (by rw [show b - -a = b + a from by ring, show b + a = a + b from by ring]; exact hp_nab)
+            · intro r hr hrba hra_neg
+              have hra : r ∣ a := by rwa [show (-a : ℤ) = -a from rfl, dvd_neg] at hra_neg
+              have hrb : r ∣ b := by
+                have h1 : r ∣ (b - -a + -a) := dvd_add hrba (dvd_neg.mpr hra)
+                rw [show b - -a + -a = b from by ring] at h1; exact h1
+              exact absurd (hab.isUnit_of_dvd' hra hrb) hr.not_unit
+            · intro ⟨h1, _⟩; rw [show b - -a = b + a from by ring] at h1
+              have h3 : (b + a) * (∑ i ∈ Finset.range p, b ^ i * (-a) ^ (p - 1 - i)) = c ^ p := by
+                rw [show b + a = b - (-a) from by ring, (Commute.all b (-a)).mul_geom_sum₂]
+                have hp_odd := Nat.Prime.odd_of_ne_two hp (by omega)
+                rw [show b ^ p - (-a) ^ p = b ^ p + a ^ p from by rw [hp_odd.neg_pow]; ring]
+                linarith
+              rw [h1, zero_mul] at h3
+              have hc0 : c = 0 := by rwa [eq_comm, pow_eq_zero_iff hp_ne] at h3
+              exact hc (hc0 ▸ dvd_zero _)
           exact exactly_one_dvd_absurd p hp hp2 hq b a c heq' hb ha hc hdb hda hdc
-            hcop_ca hcop_cb (by sorry)
+            hcop_ca hcop_cb hcop_ba
     · -- q ∣ c
       by_cases hda : (↑q : ℤ) ∣ a
       · by_cases hdb : (↑q : ℤ) ∣ b
@@ -703,7 +736,28 @@ theorem sophie_germain (p : ℕ) (hp : Nat.Prime p) (hp2 : p ≥ 3)
             rw [Odd.neg_pow hp_odd]; linarith
           have hb'_ndvd : ¬((p : ℤ) ∣ (-b)) := by rwa [dvd_neg]
           have hqb' : ¬((↑q : ℤ) ∣ (-b)) := by rwa [dvd_neg]
+          -- Three IsCoprime for (c, -b, a) call:
+          -- hcop1 = IsCoprime (a-(-b)) geom_sum₂(a,(-b),p) — same as hcop_ab after rewriting
+          -- hcop2 = IsCoprime (a-c) geom_sum₂(a,c,p) — from hac.symm + hp_nca (negated)
+          -- hcop3 = IsCoprime (c+(-b)) geom_sum₂(c,-(-b),p) = IsCoprime (c-b) geom_sum₂(c,b,p) = hcop_cb
+          have hcop_ac_rev : IsCoprime (a - c) (∑ i ∈ Finset.range p, a ^ i * c ^ (p - 1 - i)) :=
+            isCoprime_sub_geom_sum hp (by rw [show a - c = -(c - a) from by ring]; exact fun h => hp_nca (dvd_neg.mp h))
+              (fun r hr hrac hrc => by
+                have hra : r ∣ a := by have := dvd_add hrc hrac; rw [show c + (a - c) = a from by ring] at this; exact this
+                have hrb : r ∣ b := hr.dvd_of_dvd_pow (by rw [show b^p = c^p-a^p from by linarith]; exact dvd_sub (dvd_pow hrc hp_ne) (dvd_pow hra hp_ne))
+                exact absurd (hab.isUnit_of_dvd' hra hrb) hr.not_unit)
+              (by intro ⟨h1, _⟩
+                  have h3 : (a-c) * (∑ i ∈ Finset.range p, a^i * c^(p-1-i)) = -(b^p) := by
+                    rw [(Commute.all a c).mul_geom_sum₂]; linarith
+                  rw [h1, zero_mul] at h3
+                  have hb0 : b = 0 := by
+                    have : b ^ p = 0 := by linarith
+                    rwa [pow_eq_zero_iff hp_ne] at this
+                  exact hb (hb0 ▸ dvd_zero _))
           exact exactly_one_dvd_absurd p hp hp2 hq c (-b) a heq' hc hb'_ndvd ha
-            hdc hqb' hda (by sorry) (by sorry) (by sorry) -- third call site: (c,-b,a) coprime
+            hdc hqb' hda
+            (by rw [show a - -b = a + b from by ring]; exact hcop_ab)
+            hcop_ac_rev
+            (by simp only [neg_neg, show c + -b = c - b from by ring]; exact hcop_cb)
 
 end Fermat.SophieGermain
