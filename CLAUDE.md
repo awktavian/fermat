@@ -1,65 +1,93 @@
 # Fermat's Last Theorem in Lean 4
 
-0 sorry. 2 axioms. FLT for all n ≥ 3.
+0 sorry. 25 axioms. FLT for all n ≥ 3.
 
 ## Status
 
 | Metric | Value |
 |--------|-------|
 | Sorry | 0 |
-| Axioms | 2 (frey_is_modular, ribet_from_modularity_and_genus) |
-| Lines | ~1750 |
-| Files | 12 |
+| Axioms | 25 (decomposed across 2 proof routes) |
+| Lines | ~3650 |
+| Files | 23 |
 
 ## Architecture
+
+Two independent proof routes for primes p ≥ 5, plus direct computation for small cases.
 
 ```
 FLT(n) for n ≥ 3
 ├── n = 3, 4: mathlib
 ├── n = regular prime: flt-regular
 ├── n = composite: prime factor reduction
-└── n = prime p ≥ 5: wiles_chain
-    ├── frey_is_modular (AXIOM — Wiles 1995 + semistability at ℓ=2)
-    └── ribet_from_modularity_and_genus (AXIOM — Ribet 1990 + Riemann-Roch)
-        └── genus(X₀(2)) = 0 (PROVED — kernel-verified by decide)
+└── n = prime p ≥ 5:
+    ├── Route 1 (Ribet): wiles_chain
+    │   ├── frey_is_modular (AXIOM — Wiles 1995)
+    │   └── ribet_from_modularity_and_genus (AXIOM — Ribet 1990)
+    │       └── genus(X₀(2)) = 0 (PROVED — by decide)
+    │
+    └── Route 2 (Galois): flt_from_galois_reps (PROVED)
+        ├── galRep_irreducible_frey (AXIOM — Mazur 1978)
+        └── frey_rep_reducible (PROVED)
+            ├── frey_rep_hardly_ramified (AXIOM — Thm 3.3)
+            └── hardly_ramified_reducible (AXIOM — Thm 3.4)
+```
+
+Route 1 is further decomposed via `ribet_contradiction` (PROVED):
+```
+ribet_contradiction (PROVED)
+├── frey_descent_to_level_2 (AXIOM)
+├── newform_nonzero (PROVED — from Newform.ne_zero)
+└── cusp_form_level2_eq_zero (PROVED)
+    ├── dim_cusp_forms_weight2 (AXIOM — Riemann-Roch)
+    ├── cusp_forms_finite (AXIOM)
+    ├── cusp_forms_free (PROVED — Module.Free.of_divisionRing)
+    └── genus_zero_of_2 (PROVED — by decide)
 ```
 
 ## Proved Results (sorry-free)
 
-- Sophie Germain's theorem (Case I for SG primes) — coprime factorization + ZMod
+- Sophie Germain's theorem (Case I for SG primes) — 760 lines, coprime factorization + ZMod
 - Frey curve Δ ≠ 0
 - Frey semistability at odd primes (IsSemistableInt)
-- genus(X₀(N)) for N = 2..13
+- genus(X₀(N)) for N = 2..13 (by decide)
+- cusp_form_level2_eq_zero — every f ∈ S₂(Γ₀(2)) is zero
+- ribet_contradiction — level descent + no cusp forms at level 2 = ⊥
+- flt_from_galois_reps — Mazur (irreducible) vs Serre (reducible) = ⊥
+- cusp_forms_free — Module.Free.of_divisionRing (was axiom)
+- newform_nonzero — from Newform.ne_zero field (was axiom)
+- radical_dvd — Nat.prod_primeFactors_dvd (was sorry)
 - FLT for regular primes, n ∈ [3,16]
 
-## Contributing via Agents
+## Axiom Budget (25)
 
-8 work packages (WP1-WP8) build the infrastructure to decompose the 2 monolithic axioms into thin, precisely-typed axioms. Each WP produces a self-contained Lean file.
+| Category | Count | Axioms |
+|----------|-------|--------|
+| Modularity (Wiles) | 2 | frey_is_modular, ribet_from_modularity_and_genus |
+| Ribet chain | 3 | ribet_level_lowering, frey_rep_unramified, frey_descent_to_level_2 |
+| Galois reps | 3 | galRep_irreducible_frey, frey_rep_hardly_ramified, hardly_ramified_reducible |
+| Riemann-Roch | 2 | dim_cusp_forms_weight2, cusp_forms_finite |
+| R=T infrastructure | 6 | CommRing R, CommRing T, naturalMap, R_surjects_T, R_iso_T, R_iso_T_implies_modularity |
+| Precise modularity | 1 | modularity_level_eq_conductor |
+| EC infrastructure | 3 | torsion_dim, galRep_det, frey_conductor_eq |
+| Newform infrastructure | 2 | newform_from_modular_curve, galRep_of_newform_irreducible |
+| Mod 3 | 3 | fontaine_no_abelian_scheme_over_Z, odlyzko_discriminant_bound, mod3_classification |
 
-### Wave 1 (no dependencies)
-- **WP1**: Continuous Galois representations (`Fermat/GaloisRep/Basic.lean`)
-- **WP5**: Riemann-Roch genus connection (`Fermat/ModularForms/RiemannRoch.lean`)
+## Contributing
 
-### Wave 2 (depends on WP1)
-- **WP2**: Galois rep from elliptic curves (`Fermat/GaloisRep/EllipticCurve.lean`)
-- **WP3**: Conductor and ramification (`Fermat/GaloisRep/Conductor.lean`)
+### To eliminate an axiom:
+1. Prove the corresponding theorem in Lean against Mathlib
+2. Import it in the fermat repo
+3. Replace `axiom foo ...` with `theorem foo ... := <proof>`
+4. `lake build Fermat` — verify 0 errors
+5. The axiom count decreases by 1
 
-### Wave 3 (depends on WP1-3)
-- **WP4**: Hecke eigenforms and newforms (`Fermat/ModularForms/Newform.lean`)
-
-### Wave 4 (depends on WP1-5)
-- **WP6**: Ribet's theorem statement (`Fermat/Modularity/Ribet.lean`)
-- **WP7**: Modularity theorem statement (`Fermat/Modularity/ModularityAxiom.lean`)
-
-### Wave 5 (depends on all)
-- **WP8**: Integration — rewrite wiles_chain with proper types
-
-### To contribute:
-1. Pick an unclaimed WP
-2. Branch: `git checkout -b wp{N}-{description}`
-3. Implement the Lean file
-4. `lake build Fermat` must pass
-5. Submit PR
+### Recommended attack order (highest impact first):
+1. **dim_cusp_forms_weight2** — Riemann-Roch for modular curves. ~500 lines.
+2. **frey_rep_hardly_ramified** (Thm 3.3) — verify 4 conditions on Frey curve. ~1000 lines.
+3. **mod3_classification** (Thm 3.9) — classify hardly ramified mod 3 reps. ~1500 lines.
+4. **hardly_ramified_reducible** (Thm 3.4) — compose Thms 3.6+3.7+3.9. HARD.
+5. **R_iso_T** — Taylor-Wiles patching. EXTREME.
 
 ## Build
 
