@@ -9,4 +9,6 @@ import Fermat.Modularity.NoCuspForms
 import Fermat.Modularity.Semistable
 import Fermat.Modularity.Axioms
 import Fermat.Modularity.FLT
+import Fermat.GaloisRep.Basic
+import Fermat.GaloisRep.EllipticCurve
 import Fermat.ModularForms.RiemannRoch
