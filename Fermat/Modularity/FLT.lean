@@ -28,7 +28,12 @@ theorem flt_prime (p : ℕ) (hp : Nat.Prime p) (hp3 : p ≥ 3) :
   by_cases hp5 : p ≥ 5
   · rw [fermatLastTheoremFor_iff_int]
     intro a b c ha hb hc heq
-    exact wiles_chain a b c p hp hp5 heq ha hb hc
+    -- Reduce to coprime: any common prime r of a,b gives r|c, divide out
+    suffices ∀ a b c : ℤ, a ≠ 0 → b ≠ 0 → c ≠ 0 → IsCoprime a b →
+        a ^ p + b ^ p ≠ c ^ p by
+      sorry -- coprime reduction: divide by gcd(a,b), apply suffices
+    intro a b c ha hb hc hab heq'
+    exact wiles_chain a b c p hp hp5 heq' ha hb hc hab
   · have hp3' : p = 3 := by
       have h2 := hp.two_le; have : p = 3 ∨ p = 4 := by omega
       rcases this with rfl | rfl

@@ -55,9 +55,53 @@ opaque IsModular (E : WeierstrassCurve ℚ) : Prop
 -- Imperial Blueprint: Chapter 2, §2.1
 -- ═══════════════════════════════════════════════════════════════════════════
 
-axiom frey_semistable (a b c : ℤ) (p : ℕ) (hp : Nat.Prime p) (hp5 : p ≥ 5)
-    (heq : a ^ p + b ^ p = c ^ p) (ha : a ≠ 0) (hb : b ≠ 0) (hc : c ≠ 0) :
-    IsSemistable (freyCurve a b p)
+/-- The Frey curve from a primitive FLT counterexample is semistable.
+For the proof we need IsCoprime a b (primitive triple). Without coprimality,
+common factors of a,b make both Δ and c₄ divisible — the statement would be false. -/
+theorem frey_semistable (a b c : ℤ) (p : ℕ) (hp : Nat.Prime p) (hp5 : p ≥ 5)
+    (heq : a ^ p + b ^ p = c ^ p) (ha : a ≠ 0) (hb : b ≠ 0) (_hc : c ≠ 0)
+    (hab : IsCoprime a b) :
+    IsSemistable (freyCurve a b p) := by
+  intro ℓ hℓ ⟨hΔ, hc₄⟩
+  -- Compute c₄ of freyCurve: c₄ = b₂² - 24·b₄
+  -- b₂ = 4(b^p - a^p), b₄ = -2(ab)^p
+  -- c₄ = 16(b^p - a^p)² + 48(ab)^p
+  have hc₄_eq : (freyCurve a b p).c₄ = (16 * ((b : ℚ)^p - (a : ℚ)^p)^2 + 48 * ((a : ℚ) * b)^p) := by
+    unfold freyCurve WeierstrassCurve.c₄ WeierstrassCurve.b₂ WeierstrassCurve.b₄
+    push_cast; ring
+  -- ℓ | c₄ means ℓ | (16(b^p-a^p)² + 48(ab)^p)
+  rw [hc₄_eq] at hc₄
+  -- ℓ | a or ℓ | b would give additive reduction (the "bad" case).
+  -- But IsCoprime a b means no prime divides both.
+  -- So at least one of a, b is NOT divisible by ℓ.
+  -- If ℓ ∤ a and ℓ ∤ b: c₄ = 16(b^p-a^p)² + 48(ab)^p. Since ℓ ∤ ab: ℓ ∤ (ab)^p.
+  --   Need to show ℓ ∤ c₄ in this case. This requires ℓ ∤ the whole expression.
+  --   Not obvious without more structure.
+  -- If ℓ | a, ℓ ∤ b: c₄ ≡ 16(b^p)² + 0 = 16b^{2p} mod ℓ. ℓ ∤ b → ℓ ∤ b^{2p} → ℓ ∤ 16b^{2p}
+  --   (if ℓ ≠ 2; ℓ = 2 needs separate analysis).
+  -- If ℓ ∤ a, ℓ | b: c₄ ≡ 16(a^p)² + 0 = 16a^{2p} mod ℓ. Same.
+  -- The ℓ = 2 case is special and needs the normalization a ≡ -1 mod 4, 2|b.
+  -- For now: handle odd ℓ, sorry ℓ = 2.
+  have hℓ_prime_int : Prime (ℓ : ℤ) := Nat.prime_iff_prime_int.mp hℓ
+  have hp_ne : p ≠ 0 := Nat.Prime.ne_zero hp
+  -- IsCoprime a b → ℓ can't divide both
+  -- Case split: ℓ = 2 or ℓ odd
+  by_cases hℓ2 : ℓ = 2
+  · -- ℓ = 2: requires Frey curve normalization (a ≡ -1 mod 4, 2|b).
+    -- With arbitrary coprime a,b: 2 | c₄ always (c₄ = 16(...)+48(...)).
+    -- So need 2 ∤ Δ. This depends on the specific form of Δ.
+    -- Standard FLT: WLOG b even, a ≡ -1 mod 4. Minimal discriminant at 2.
+    sorry -- ℓ=2 case: needs normalization + Tate analysis
+  · -- ℓ odd (ℓ ≠ 2)
+    have hℓ_odd : (ℓ : ℤ) ≠ 2 := by exact_mod_cast hℓ2
+    have hℓ_prime_int : Prime (ℓ : ℤ) := Nat.prime_iff_prime_int.mp hℓ
+    have hp_ne : p ≠ 0 := Nat.Prime.ne_zero hp
+    -- For odd ℓ with IsCoprime a b: ℓ | a → ℓ ∤ b, so c₄ ≡ 16b^{2p} ≢ 0.
+    -- ℓ ∤ ab → Δ ∝ (ab)^{2p}·..., ℓ ∤ Δ.
+    -- Both cases: ¬(ℓ | Δ ∧ ℓ | c₄).
+    -- The ℚ-divisibility computation requires push_cast / ring_nf to reduce
+    -- Δ and c₄ to integer expressions modulo ℓ. Tedious but mechanical.
+    sorry -- odd ℓ: c₄ ≡ 16b^{2p} or 16a^{2p} mod ℓ (coprime), ℓ odd → ℓ ∤ c₄
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- AXIOM 2: Modularity Theorem (Wiles 1995, BCDT 2001)
@@ -110,9 +154,10 @@ The genus computation (genus X₀(2) = 0) is proved, not axiomatized — it ente
 the Ribet axiom as a kernel-verified input. -/
 theorem wiles_chain (a b c : ℤ) (p : ℕ) (hp : Nat.Prime p) (hp5 : p ≥ 5)
     (heq : a ^ p + b ^ p = c ^ p)
-    (ha : a ≠ 0) (hb : b ≠ 0) (hc : c ≠ 0) : False :=
+    (ha : a ≠ 0) (hb : b ≠ 0) (hc : c ≠ 0)
+    (hab : IsCoprime a b) : False :=
   ribet_from_modularity_and_genus a b c p hp hp5 heq ha hb hc
-    (modularity_theorem _ (frey_semistable a b c p hp hp5 heq ha hb hc))
-    Fermat.NoCuspForms.genus_X0_level2_eq_zero  -- proved genus
+    (modularity_theorem _ (frey_semistable a b c p hp hp5 heq ha hb hc hab))
+    Fermat.NoCuspForms.genus_X0_level2_eq_zero
 
 end Fermat.Axioms
