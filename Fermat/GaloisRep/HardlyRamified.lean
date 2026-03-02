@@ -13,11 +13,12 @@
 
   The two key results:
   • Theorem 3.3 (frey_rep_hardly_ramified): The Frey curve's mod-p
-    representation is hardly ramified. This follows from the explicit
-    arithmetic of the Frey curve: the Weil pairing gives (1), the
-    discriminant Δ = 2⁸(abc)^{2p} controls ramification for (2),
-    Tate's algorithm at 2 gives (3), and the theory of finite flat
-    group schemes over ℤ_p gives (4).
+    representation is hardly ramified. DECOMPOSED into 4 sub-results:
+    (1) Weil pairing → cyclotomic det: PROVED from `galRep_det`
+    (2) Ramification analysis → unramified outside {2,p}: PROVED from
+        `Discriminant.frey_rep_unramified_all_odd` (which uses tate_unramified)
+    (3) Tate's algorithm at 2 → locally reducible: SUB-AXIOM
+    (4) Fontaine/Raynaud → flat at p: SUB-AXIOM
 
   • Theorem 3.4 (hardly_ramified_reducible): Every hardly ramified
     representation is reducible. This is the deep result — it follows
@@ -132,33 +133,149 @@ def IsHardlyRamified
   IsFlatAtP ρ
 
 -- ═══════════════════════════════════════════════════════════════════════════
--- §3. Theorem 3.3 — The Frey Representation is Hardly Ramified
+-- §3. Theorem 3.3 — The Frey Representation is Hardly Ramified (Decomposed)
 -- ═══════════════════════════════════════════════════════════════════════════
 
-/-- **Axiom (Theorem 3.3).** The mod-p Galois representation of the Frey
-curve attached to a putative FLT counterexample a^p + b^p = c^p is
-hardly ramified.
+/-
+  DECOMPOSITION STRATEGY.
 
-The four conditions are established by:
-(1) The Weil pairing: det(ρ̄_{E,p}) = χ_p for any elliptic curve E.
-(2) Ramification analysis: the Frey curve has multiplicative reduction
-    at odd primes ℓ | abc, with p | v_ℓ(Δ), so ρ̄ is unramified there.
-    At primes ℓ ∤ 2pabc, the curve has good reduction.
-(3) Tate's algorithm at 2: the Frey curve y² = x(x−aᵖ)(x+bᵖ) has
-    multiplicative reduction at 2 (since 2 | aᵖ·bᵖ for the normalized
-    triple). The unramified quotient of ρ̄|_{D₂} is the Legendre symbol
-    character, which has order 2 (hence square = 1).
-(4) Fontaine's theory: for p ≥ 5, the p-torsion E[p] extends to a
-    finite flat group scheme over ℤ_p (Raynaud's theorem applies since
-    p > 2 and the curve is semistable).
+  The monolithic axiom `frey_rep_hardly_ramified` asserted all four conditions
+  of `IsHardlyRamified` at once. We decompose it into four sub-results:
 
-Imperial FLT Blueprint: Chapter 3, Theorem 3.3. -/
-axiom frey_rep_hardly_ramified (a b c : ℤ) (p : ℕ)
+  (1) HasCyclotomicDet — PROVED from `galRep_det` (Weil pairing axiom)
+  (2) IsUnramifiedOutside2p — PROVED from
+      `Discriminant.frey_rep_unramified_all_odd` (which uses tate_unramified)
+  (3) IsLocallyReducibleAt2 — SUB-AXIOM (opaque predicate, requires Tate curve)
+  (4) IsFlatAtP — SUB-AXIOM (opaque predicate, requires Fontaine theory)
+
+  Net effect: the axiom `frey_rep_hardly_ramified` becomes a *proved theorem*
+  composed from 2 proved lemmas + 2 sub-axioms. The `tate_unramified` axiom
+  in Discriminant.lean (which also powers frey_rep_unramified) is the only
+  new axiom, and it is a general statement about Tate parametrization.
+-/
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- §3a. Condition 1: Cyclotomic Determinant (PROVED)
+-- ─────────────────────────────────────────────────────────────────────────
+
+/-- **Theorem (Condition 1).** The mod-p Galois representation of the
+Frey curve has cyclotomic determinant: det(ρ̄_{E,p}) = χ_p.
+
+Proof: immediate from the Weil pairing (`galRep_det`) applied to the
+Frey curve, using `frey_discriminant` to verify Δ ≠ 0.
+
+Imperial FLT Blueprint: Chapter 3, §3.2 (Weil pairing). -/
+theorem frey_has_cyclotomic_det (a b c : ℤ) (p : ℕ)
     [Fact (Nat.Prime p)]
     (hp5 : p ≥ 5)
     (heq : a ^ p + b ^ p = c ^ p)
     (ha : a ≠ 0) (hb : b ≠ 0) (hc : c ≠ 0) :
-    IsHardlyRamified (galRepOfCurve (freyCurve a b p) p)
+    HasCyclotomicDet (galRepOfCurve (freyCurve a b p) p) := by
+  unfold HasCyclotomicDet
+  exact galRep_det (freyCurve a b p) p hp5
+    (frey_discriminant a b c p hp5 heq ha hb hc)
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- §3b. Condition 2: Unramified Outside {2, p} (PROVED)
+-- ─────────────────────────────────────────────────────────────────────────
+
+/-- **Theorem (Condition 2).** The mod-p Galois representation of the
+Frey curve is unramified at every prime q with q ≠ 2 and q ≠ p.
+
+Proof: `Discriminant.frey_rep_unramified_all_odd` provides unramifiedness
+at ALL odd primes (not just those dividing the conductor), using the
+Tate parametrization axiom and the fact that p | v_q(Δ) for the Frey
+curve's discriminant Δ = 16(abc)^{2p}. Since IsUnramifiedOutside2p
+requires q ≠ 2 and q ≠ p, and "odd" = "≠ 2", the q = p case is
+excluded by hypothesis, so we just apply the general result.
+
+Imperial FLT Blueprint: Chapter 3, §3.2 (ramification analysis). -/
+theorem frey_unramified_outside_2p (a b c : ℤ) (p : ℕ)
+    [Fact (Nat.Prime p)]
+    (hp5 : p ≥ 5)
+    (heq : a ^ p + b ^ p = c ^ p)
+    (ha : a ≠ 0) (hb : b ≠ 0) (hc : c ≠ 0) :
+    IsUnramifiedOutside2p (galRepOfCurve (freyCurve a b p) p) := by
+  unfold IsUnramifiedOutside2p
+  intro q hq hq2 _hqp
+  exact Discriminant.frey_rep_unramified_all_odd a b c p hp5 heq
+    ha hb hc q hq hq2
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- §3c. Conditions 3 & 4: Sub-axioms (opaque predicates)
+-- ─────────────────────────────────────────────────────────────────────────
+
+/-- **Axiom (Condition 3: Tate's algorithm at 2).** The mod-p Galois
+representation of the Frey curve is locally reducible at 2.
+
+The Frey curve y² = x(x − aᵖ)(x + bᵖ) has multiplicative reduction at 2
+(the normalized form has 2 | Δ). By the Tate parametrization, the local
+representation at 2 is an extension of an unramified character by the
+cyclotomic character. The unramified quotient sends Frob₂ to ±1 (the
+Legendre symbol of the Tate parameter), so its square is 1.
+
+Proving this formally requires:
+1. Tate's algorithm to determine the reduction type at 2
+2. The Tate parametrization for multiplicative reduction
+3. The structure of the local representation ρ̄|_{D₂}
+
+Imperial FLT Blueprint: Chapter 3, Theorem 3.3(3). -/
+axiom frey_locally_reducible_at_2 (a b c : ℤ) (p : ℕ)
+    [Fact (Nat.Prime p)]
+    (hp5 : p ≥ 5)
+    (heq : a ^ p + b ^ p = c ^ p)
+    (ha : a ≠ 0) (hb : b ≠ 0) (hc : c ≠ 0) :
+    IsLocallyReducibleAt2 (galRepOfCurve (freyCurve a b p) p)
+
+/-- **Axiom (Condition 4: Fontaine flatness).** The mod-p Galois
+representation of the Frey curve is flat at p.
+
+For the Frey curve E at a prime p ≥ 5:
+• If p ∤ abc: E has good reduction at p, so E[p] extends to a finite
+  flat group scheme over ℤ_p (the p-torsion of the Néron model).
+• If p | abc: E has multiplicative reduction at p, but Raynaud's theorem
+  (applied because p ≥ 3 and E is semistable) still gives a finite
+  flat group scheme structure on E[p] over ℤ_p.
+
+Proving this formally requires:
+1. Fontaine's classification of finite flat group schemes over ℤ_p
+2. Raynaud's theorem on prolongation of group schemes
+3. The theory of Barsotti–Tate groups for semistable curves
+
+Imperial FLT Blueprint: Chapter 3, Theorem 3.3(4). -/
+axiom frey_flat_at_p (a b c : ℤ) (p : ℕ)
+    [Fact (Nat.Prime p)]
+    (hp5 : p ≥ 5)
+    (heq : a ^ p + b ^ p = c ^ p)
+    (ha : a ≠ 0) (hb : b ≠ 0) (hc : c ≠ 0) :
+    IsFlatAtP (galRepOfCurve (freyCurve a b p) p)
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- §3d. Assembly: The Frey Representation is Hardly Ramified (PROVED)
+-- ─────────────────────────────────────────────────────────────────────────
+
+/-- **Theorem (Theorem 3.3).** The mod-p Galois representation of the Frey
+curve attached to a putative FLT counterexample a^p + b^p = c^p is
+hardly ramified.
+
+Previously a monolithic axiom; now a proved composition:
+(1) `frey_has_cyclotomic_det` — from `galRep_det` (Weil pairing) [PROVED]
+(2) `frey_unramified_outside_2p` — from
+    `Discriminant.frey_rep_unramified_all_odd` [PROVED]
+(3) `frey_locally_reducible_at_2` — Tate's algorithm [SUB-AXIOM]
+(4) `frey_flat_at_p` — Fontaine/Raynaud flatness [SUB-AXIOM]
+
+Imperial FLT Blueprint: Chapter 3, Theorem 3.3. -/
+theorem frey_rep_hardly_ramified (a b c : ℤ) (p : ℕ)
+    [Fact (Nat.Prime p)]
+    (hp5 : p ≥ 5)
+    (heq : a ^ p + b ^ p = c ^ p)
+    (ha : a ≠ 0) (hb : b ≠ 0) (hc : c ≠ 0) :
+    IsHardlyRamified (galRepOfCurve (freyCurve a b p) p) :=
+  ⟨frey_has_cyclotomic_det a b c p hp5 heq ha hb hc,
+   frey_unramified_outside_2p a b c p hp5 heq ha hb hc,
+   frey_locally_reducible_at_2 a b c p hp5 heq ha hb hc,
+   frey_flat_at_p a b c p hp5 heq ha hb hc⟩
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- §4. Theorem 3.4 — Hardly Ramified Implies Reducible
@@ -269,21 +386,34 @@ theorem flt_from_galois_reps (a b c : ℤ) (p : ℕ)
 
 /-
   PROVED (0 sorry):
+  • frey_has_cyclotomic_det        [§3a]
+    From galRep_det (Weil pairing) + frey_discriminant (Δ ≠ 0).
+  • frey_unramified_outside_2p     [§3b]
+    From Discriminant.frey_rep_unramified_all_odd (tate_unramified axiom).
+  • frey_rep_hardly_ramified       [§3d, was axiom, now theorem]
+    Composition of conditions 1–4.
   • frey_rep_reducible             [§5]
     Composition: Theorem 3.3 + Theorem 3.4 → ¬IsIrreducible
   • flt_from_galois_reps           [§6]
     Composition: Mazur (irreducible) + §5 (reducible) → False
 
-  AXIOMS (2):
-  • frey_rep_hardly_ramified       [§3, Theorem 3.3]
-    Local analysis: Weil pairing + Tate algorithm + Fontaine theory.
-    Provable from explicit arithmetic of the Frey curve.
+  AXIOMS (3, was 2 — but more transparent):
+  • frey_locally_reducible_at_2    [§3c, split from frey_rep_hardly_ramified]
+    Tate's algorithm at 2. Requires Tate parametrization for local rep at 2.
 
-  • hardly_ramified_reducible      [§4, Theorem 3.4]
+  • frey_flat_at_p                 [§3c, split from frey_rep_hardly_ramified]
+    Fontaine/Raynaud flatness. Requires p-divisible group theory.
+
+  • hardly_ramified_reducible      [§4, unchanged]
     Deepest axiom: Serre's conjecture (partial) + Langlands–Tunnell.
     Requires automorphic forms + class field theory.
 
-  OPAQUE (2):
+  SHARED AXIOM (from Discriminant.lean):
+  • tate_unramified — used by frey_unramified_outside_2p via
+    Discriminant.frey_rep_unramified_all_odd. General statement about
+    the Tate parametrization: p | v_ℓ(Δ) → mod-p rep unramified at ℓ.
+
+  OPAQUE (2, unchanged):
   • IsLocallyReducibleAt2          [§1]
     Local reducibility at 2. Requires decomposition groups.
 
@@ -291,6 +421,19 @@ theorem flt_from_galois_reps (a b c : ℤ) (p : ℕ)
     Fontaine flatness. Requires p-divisible group theory.
 
   NET EFFECT:
+  The monolithic `frey_rep_hardly_ramified` axiom (1 axiom asserting a
+  4-way conjunction) is replaced by:
+    • 2 proved lemmas (conditions 1–2)
+    • 2 sub-axioms (conditions 3–4)
+    • 1 proved assembly theorem
+
+  The axiom count increases from 2 to 3 in this file (plus tate_unramified
+  shared with the Ribet route), but the *opaque content* decreases:
+  conditions 1 and 2 are now visible to the kernel. The new axioms are
+  individually more transparent and independently verifiable:
+    • frey_locally_reducible_at_2 is Tate's algorithm (explicit computation)
+    • frey_flat_at_p is Raynaud's theorem (deep but standard)
+
   An independent proof of FLT for p ≥ 5 via Galois representations,
   parallel to the modularity route in Ribet.lean. Both routes share
   Mazur's irreducibility but derive reducibility differently:

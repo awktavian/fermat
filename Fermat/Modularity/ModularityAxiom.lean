@@ -46,13 +46,13 @@ theorem modularity_level_eq_conductor (a b c : ℤ) (p : ℕ) [Fact (Nat.Prime p
     (hp5 : p ≥ 5)
     (heq : a ^ p + b ^ p = c ^ p)
     (ha : a ≠ 0) (hb : b ≠ 0) (hc : c ≠ 0) :
-    ∃ f : Newform (conductorOf p (galRepOfCurve (freyCurve a b p) p)) 2,
+    ∃ f : Newform (conductorOf p (freyCurve a b p)) 2,
       galRepOfNewform f p = galRepOfCurve (freyCurve a b p) p :=
   let hmod := (frey_modular_from_R_eq_T a b p hp5
     (galRepOfCurve (freyCurve a b p) p)
     (galRep_irreducible_frey a b c p hp5 heq ha hb hc)) 0
   newform_from_modular_curve (freyCurve a b p)
-    (conductorOf p (galRepOfCurve (freyCurve a b p) p)) hmod p
+    (conductorOf p (freyCurve a b p)) hmod p
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- §3. Modularity of the Frey Curve (Derived)
@@ -64,7 +64,7 @@ theorem modularity_of_frey (a b c : ℤ) (p : ℕ) [Fact (Nat.Prime p)]
     (heq : a ^ p + b ^ p = c ^ p)
     (ha : a ≠ 0) (hb : b ≠ 0) (hc : c ≠ 0) :
     IsModularPrecise (freyCurve a b p) p :=
-  ⟨conductorOf p (galRepOfCurve (freyCurve a b p) p),
+  ⟨conductorOf p (freyCurve a b p),
    modularity_level_eq_conductor a b c p hp5 heq ha hb hc⟩
 
 end Fermat

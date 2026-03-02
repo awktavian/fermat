@@ -10,11 +10,10 @@
   3. The decomposition subgroup D_ℓ ⊂ Gal(Q̄/Q) (stabilizer of the extension)
   4. The inertia subgroup I_ℓ ◁ D_ℓ (kernel of residue field action)
 
-  The one mathematical gap: the existence of a valuation extending the ℓ-adic
-  valuation from ℚ to AlgebraicClosure ℚ (Chevalley's extension theorem,
-  a standard application of Zorn's lemma). This is stated as a sorry-backed
-  lemma, with a clear path to resolution once Mathlib gains the extension
-  theorem for valuations along algebraic extensions.
+  Chevalley's extension theorem (the existence of a valuation extending the
+  ℓ-adic valuation from ℚ to AlgebraicClosure ℚ) is fully proved using
+  `IsLocalRing.exists_factor_valuationRing` (Zorn's lemma for local subrings)
+  and the maximality of valuation subrings in the domination order.
 
   The definition of IsUnramifiedAt is independent of the choice of extending
   valuation: all extensions are conjugate under Gal(Q̄/Q), so the inertia
@@ -33,6 +32,7 @@
 
 import Fermat.GaloisRep.Basic
 import Mathlib.RingTheory.Valuation.RamificationGroup
+import Mathlib.RingTheory.Valuation.LocalSubring
 import Mathlib.RingTheory.DedekindDomain.AdicValuation
 import Mathlib.Data.Nat.Prime.Int
 
@@ -82,18 +82,50 @@ For any valuation subring V of ℚ, there exists a valuation subring W of
 the algebraic closure Q̄ = AlgebraicClosure ℚ such that W restricts to V,
 i.e., W.comap (algebraMap ℚ Q̄) = V.
 
-This is a standard consequence of Zorn's lemma:
-1. The integral closure of V in Q̄ is a local ring
-2. By `LocalSubring.exists_le_valuationSubring`, any local subring
-   of a field can be dominated by a valuation subring
-3. The resulting valuation subring restricts to V
-
-Once Mathlib gains `Valuation.exists_extension_of_isAlgebraic` or equivalent,
-this sorry can be eliminated. -/
+Proved using Zorn's lemma via `IsLocalRing.exists_factor_valuationRing`:
+1. The composition V ↪ ℚ ↪ Q̄ factors through a valuation subring W of Q̄
+2. The factored map V → W is a local ring homomorphism
+3. The comap property W.comap = V follows from:
+   - V ⊆ W.comap (by construction)
+   - W.comap ⊆ V: if x ∉ V then x⁻¹ ∈ V (valuation property), so
+     f(x⁻¹) is a unit in W with inverse f(x); by IsLocalHom, x⁻¹ is a
+     unit in V, so x = (x⁻¹)⁻¹ ∈ V — contradiction. -/
 lemma exists_valuationSubring_extension (V : ValuationSubring ℚ) :
     ∃ W : ValuationSubring (AlgebraicClosure ℚ),
       W.comap (algebraMap ℚ (AlgebraicClosure ℚ)) = V := by
-  sorry
+  -- The ring homomorphism from V (a local ring) into the algebraic closure
+  let f : V →+* AlgebraicClosure ℚ :=
+    (algebraMap ℚ (AlgebraicClosure ℚ)).comp V.subtype
+  -- Factor through a valuation subring W of Q̄ (Chevalley via Zorn)
+  obtain ⟨W, hW, hlocal⟩ := IsLocalRing.exists_factor_valuationRing f
+  refine ⟨W, ?_⟩
+  -- Show W.comap (algebraMap ℚ Q̄) = V
+  apply ValuationSubring.ext; intro x; constructor
+  · -- W.comap ⊆ V: if algebraMap x ∈ W, then x ∈ V
+    intro (hx : algebraMap ℚ (AlgebraicClosure ℚ) x ∈ W)
+    by_contra hxV
+    have hxV' : x⁻¹ ∈ V := (V.mem_or_inv_mem x).resolve_left hxV
+    have hx0 : x ≠ 0 := fun h => hxV (h ▸ V.zero_mem)
+    -- f(x⁻¹) · algebraMap(x) = 1 in W
+    set a : W.toSubring := f.codRestrict W.toSubring hW ⟨x⁻¹, hxV'⟩
+    set b : W.toSubring := ⟨algebraMap ℚ (AlgebraicClosure ℚ) x, hx⟩
+    have hab : (a : AlgebraicClosure ℚ) * b = 1 := by
+      change algebraMap ℚ (AlgebraicClosure ℚ) x⁻¹ * algebraMap ℚ (AlgebraicClosure ℚ) x = 1
+      rw [← map_mul, inv_mul_cancel₀ hx0, map_one]
+    have ha_unit : IsUnit a := IsUnit.of_mul_eq_one b (Subtype.ext hab)
+    -- IsLocalHom: unit in W implies unit in V
+    have hunit_V : IsUnit (⟨x⁻¹, hxV'⟩ : V.toSubring) :=
+      IsLocalHom.map_nonunit _ ha_unit
+    -- x⁻¹ is a unit in V means its inverse x is also in V
+    rw [isUnit_iff_exists_inv] at hunit_V
+    obtain ⟨⟨y, hy_mem⟩, hxy⟩ := hunit_V
+    have hxy_val : x⁻¹ * y = 1 := congr_arg Subtype.val hxy
+    have : y = x := by
+      have h1 : x⁻¹ * y = x⁻¹ * x := by rw [hxy_val, inv_mul_cancel₀ hx0]
+      exact mul_left_cancel₀ (inv_ne_zero hx0) h1
+    exact hxV (this ▸ hy_mem)
+  · -- V ⊆ W.comap: if x ∈ V then algebraMap x ∈ W
+    exact fun hx => hW ⟨x, hx⟩
 
 /-- A nonconstructive choice of valuation subring of Q̄ extending a given
 valuation subring of ℚ. -/

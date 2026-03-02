@@ -18,15 +18,17 @@
   the representation. The inertia group is defined using Mathlib's
   `ValuationSubring.inertiaSubgroup`. See Ramification.lean for details.
 
-  Axiom budget (2 axioms):
+  Axiom budget (1 axiom in this file):
   - ribet_level_lowering -- Ribet 1990, Chapter 3 of Imperial Blueprint
-  - frey_rep_unramified -- local analysis at primes of the Frey conductor
+  (frey_rep_unramified was here — now a theorem in Discriminant.lean
+   proved from the `tate_unramified` axiom + discriminant infrastructure)
 
   Imperial FLT Blueprint: Chapter 3 (p-torsion reducibility, Ribet's theorem),
   Chapter 4 S4.1 (level lowering in the modularity argument).
 -/
 
 import Fermat.GaloisRep.Conductor
+import Fermat.GaloisRep.Discriminant
 import Fermat.GaloisRep.Ramification
 import Fermat.ModularForms.Newform
 
@@ -89,34 +91,10 @@ axiom ribet_level_lowering {q N p : ℕ} [Fact (Nat.Prime p)]
 -- §3. Frey Representation is Unramified at Odd Conductor Primes
 -- ═══════════════════════════════════════════════════════════════════════════
 
-/-- **Axiom (Frey representation unramified at odd primes).**
-
-For the Frey curve E : y^2 = x(x - a^p)(x + b^p) attached to a putative
-FLT counterexample a^p + b^p = c^p with p >= 5, the mod-p Galois
-representation rho-bar_{E,p} is unramified at every odd prime ell dividing
-the Frey conductor rad(|abc|).
-
-The key fact: at an odd prime ell | abc, the Frey curve has multiplicative
-reduction with v_ell(Delta) divisible by p (since Delta involves p-th powers).
-The mod-p representation of a semistable curve at a prime of multiplicative
-reduction is unramified when p divides the valuation of the discriminant --
-this is because the Tate parametrization gives rho-bar|_{I_ell} = (1 psi; 0 1)
-where psi has order dividing v_ell(Delta), so psi^{p} = 1 mod p when p | v_ell(Delta).
-
-For the Frey curve, Delta = 16(abc)^{2p} (see `Discriminant.lean`), so
-v_ell(Delta) = 2p * v_ell(|abc|) for odd ell. Since p | 2p, we get p | v_ell(Delta).
-The algebraic half (discriminant computation, p-adic divisibility) is
-proved in `Fermat.Discriminant`; what remains is the Tate parametrization
-connecting p | v_ell(Delta) to unramifiedness of the mod-p representation.
-
-Imperial FLT Blueprint: Chapter 3, S3.2 (local analysis at bad primes). -/
-axiom frey_rep_unramified (a b c : ℤ) (p : ℕ) [Fact (Nat.Prime p)]
-    (hp5 : p ≥ 5)
-    (heq : a ^ p + b ^ p = c ^ p)
-    (ha : a ≠ 0) (hb : b ≠ 0) (hc : c ≠ 0)
-    (ℓ : ℕ) (hℓ : Nat.Prime ℓ) (hℓ2 : ℓ ≠ 2)
-    (hℓN : ℓ ∣ freyConductor a b c) :
-    IsUnramifiedAt (galRepOfCurve (freyCurve a b p) p) ℓ
+-- **Theorem (was axiom).** frey_rep_unramified is now proved in
+-- Fermat.Discriminant.frey_rep_unramified, available via the import above.
+-- See Discriminant.lean §8 for the proof chain:
+--   frey_weierstrass_disc_fermat → p_dvd_padicValInt_frey_disc → tate_unramified
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- §4. Newforms Have Nonzero Cusp Forms
@@ -233,14 +211,17 @@ theorem ribet_from_modularity_and_genus_proved (a b c : ℤ) (p : ℕ)
   - frey_descent_to_level_2 [S5]
     Derived from newform_from_modular_curve at level 2.
 
-  AXIOMS (2):
+  AXIOMS (1 in this file):
   - ribet_level_lowering [S2]
     Ribet 1990. Single-prime level descent for mod-p representations.
     Deepest axiom here -- requires Mazur's principle + Ihara's lemma.
 
-  - frey_rep_unramified [S3]
-    Local analysis: Tate parametrization + p | v_ell(Delta) for the Frey curve.
-    Provable in principle from the explicit discriminant formula.
+  ELIMINATED (was axiom, now theorem):
+  - frey_rep_unramified [S3] -- proved in Discriminant.lean
+    Now a theorem via: discriminant formula (proved) + tate_unramified (axiom).
+    The algebraic specialization to the Frey curve is fully proved.
+    The remaining axiom `tate_unramified` (in Discriminant.lean) is about a
+    general Weierstrass curve: p | v_ℓ(Δ) → mod-p rep unramified at ℓ.
 
   CONCRETIZED (was opaque):
   - IsUnramifiedAt [Ramification.lean]
