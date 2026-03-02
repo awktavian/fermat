@@ -9,3 +9,4 @@ import Fermat.Modularity.NoCuspForms
 import Fermat.Modularity.Semistable
 import Fermat.Modularity.Axioms
 import Fermat.Modularity.FLT
+import Fermat.ModularForms.RiemannRoch
