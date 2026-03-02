@@ -14,8 +14,10 @@ import Fermat.Modularity.FLT
 import Fermat.GaloisRep.Basic
 import Fermat.GaloisRep.EllipticCurve
 import Fermat.GaloisRep.Conductor
+import Fermat.GaloisRep.Discriminant
 import Fermat.GaloisRep.HardlyRamified
 import Fermat.GaloisRep.Mod3
+import Fermat.GaloisRep.Ramification
 import Fermat.Modularity.DeformationRing
 import Fermat.ModularForms.RiemannRoch
 import Fermat.ModularForms.Newform

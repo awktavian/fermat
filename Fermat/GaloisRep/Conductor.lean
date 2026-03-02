@@ -101,6 +101,11 @@ The 2-adic factor is absorbed: we axiomatize that the Artin conductor
 equals the radical of |abc|. The level-lowering step (Ribet's theorem)
 only needs that N_E is squarefree away from 2, which the radical gives.
 
+The algebraic infrastructure for this is in `Fermat.Discriminant`:
+the set of odd primes dividing Δ equals the set dividing freyConductor
+(`odd_prime_dvd_disc_iff_dvd_conductor`). What remains is concretizing
+`conductorOf` and proving the semistable conductor formula f_ℓ ∈ {0,1}.
+
 Imperial FLT Blueprint: Chapter 4, §4.1. -/
 axiom frey_conductor_eq (a b c : ℤ) (p : ℕ) [Fact (Nat.Prime p)]
     (hp5 : p ≥ 5)

@@ -1,12 +1,12 @@
 # Fermat's Last Theorem in Lean 4
 
-0 sorry. 12 axioms. FLT for all n ≥ 3.
+1 sorry. 12 axioms. FLT for all n ≥ 3.
 
 ## Status
 
 | Metric | Value |
 |--------|-------|
-| Sorry | 0 |
+| Sorry | 1 (Chevalley's valuation extension — Ramification.lean) |
 | Axioms | 12 |
 | Lines | ~3600 |
 | Files | 23 |
@@ -41,16 +41,33 @@ FLT(n) for n ≥ 3
 | 2 | frey_rep_hardly_ramified | MEDIUM (Thm 3.3) | Galois route |
 | 3 | hardly_ramified_reducible | HARD (Thm 3.4) | Galois route |
 | 4 | newform_from_modular_curve | HARD (Eichler-Shimura) | Ribet route |
-| 5 | dim_cusp_forms_weight2 | MEDIUM (Riemann-Roch) | Ribet route |
-| 6 | cusp_forms_finite | MEDIUM (analytic) | Ribet route |
-| 7 | ribet_level_lowering | HARD (Ribet 1990) | Infrastructure |
-| 8 | frey_rep_unramified | MEDIUM (local analysis) | Infrastructure |
-| 9 | torsion_dim | MEDIUM (Silverman) | Infrastructure |
+| 5 | cusp_forms_level2_subsingleton | MEDIUM (Riemann-Roch) | Ribet route |
+| 6 | ribet_level_lowering | HARD (Ribet 1990) | Infrastructure |
+| 7 | frey_rep_unramified | MEDIUM (local analysis) | Infrastructure |
+| 8 | torsionModule_fintype | MEDIUM (division poly) | Infrastructure |
+| 9 | torsionModule_card | MEDIUM (division poly) | Infrastructure |
 | 10 | galRep_det | MEDIUM (Weil pairing) | Infrastructure |
 | 11 | frey_conductor_eq | MEDIUM (conductor) | Infrastructure |
 | 12 | galRep_of_newform_irreducible | MEDIUM (Mazur) | Infrastructure |
 
-## 15 Axioms Eliminated This Session
+## Opaques Concretized (Ralph Byzantine Session)
+
+| Opaque | Method |
+|--------|--------|
+| cyclotomicChar | Mathlib modularCyclotomicCharacter + AbsGaloisGroup bridge |
+| torsionModule | Concrete p-torsion subgroup of E(Q̄) |
+| IsUnramifiedAt | Mathlib ValuationSubring.inertiaSubgroup (1 sorry: Chevalley) |
+| torsion_dim | Proved from torsionModule_fintype + torsionModule_card |
+| dim_cusp_forms_weight2 + cusp_forms_finite | Merged into cusp_forms_level2_subsingleton |
+
+## New Infrastructure Files
+
+| File | Lines | Content |
+|------|-------|---------|
+| Ramification.lean | 168 | Concrete IsUnramifiedAt via inertia groups |
+| Discriminant.lean | 303 | 10 theorems: Frey discriminant, p-adic valuation, p \| v_ℓ(Δ) |
+
+## 16 Axioms Eliminated (Prior Sessions)
 
 | Axiom | Method |
 |-------|--------|
