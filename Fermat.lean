@@ -8,6 +8,8 @@ import Fermat.Modularity.GenusFormula
 import Fermat.Modularity.NoCuspForms
 import Fermat.Modularity.Semistable
 import Fermat.Modularity.Axioms
+import Fermat.Modularity.ModularityAxiom
+import Fermat.Modularity.Ribet
 import Fermat.Modularity.FLT
 import Fermat.GaloisRep.Basic
 import Fermat.GaloisRep.EllipticCurve
