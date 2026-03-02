@@ -51,6 +51,8 @@ isogeny classes of elliptic curves over ℚ by Eichler-Shimura). -/
 structure Newform (N : ℕ) (k : ℤ) where
   /-- The underlying cusp form in S_k(Γ₀(N)). -/
   toCuspForm : CuspFormSpace N k
+  /-- A newform is nonzero (normalized: a₁(f) = 1 ≠ 0). -/
+  ne_zero : toCuspForm ≠ 0
 
 attribute [coe] Newform.toCuspForm
 
@@ -58,11 +60,9 @@ instance Newform.instCoe (N : ℕ) (k : ℤ) :
     Coe (Newform N k) (CuspFormSpace N k) where
   coe := Newform.toCuspForm
 
-/-- Newforms are inhabited (the zero cusp form wraps trivially).
-Mathematically, the zero form is not a newform (a₁ = 0 ≠ 1), but
-this instance is needed for opaque definitions below. -/
-instance Newform.instInhabited (N : ℕ) (k : ℤ) : Inhabited (Newform N k) :=
-  ⟨⟨0⟩⟩
+-- Note: Newform is NOT Inhabited in general — the zero form is not a
+-- newform (a₁ = 0 ≠ 1), and S_k(Γ₀(N)) may be trivial (e.g., N = 2).
+-- Opaque definitions that return GaloisRep use GaloisRep.instInhabitedAux.
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- §2. Level Accessor

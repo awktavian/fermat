@@ -124,24 +124,20 @@ axiom frey_rep_unramified (a b c : ℤ) (p : ℕ) [Fact (Nat.Prime p)]
 -- §4. Newforms Have Nonzero Cusp Forms
 -- ═══════════════════════════════════════════════════════════════════════════
 
-/-- **Axiom (Newform normalization).**
+/-- **Theorem (Newform normalization).**
 
-A newform arising from a modular elliptic curve has nonzero underlying
-cusp form. This is immediate from the definition: a newform is a
-*normalized* Hecke eigenform, meaning a₁(f) = 1 ≠ 0, so f ≠ 0.
+A newform has nonzero underlying cusp form. This is now enforced by the
+`Newform` type itself: the `ne_zero` field encodes the normalization
+condition a₁(f) = 1 ≠ 0, so f ≠ 0.
 
-Our `Newform` type does not enforce the normalization condition (it would
-require the full Hecke algebra), so we axiomatize: any newform that
-matches the Galois representation of an elliptic curve is nonzero.
-
-This is the weakest possible statement — it only claims nonzero for
-newforms that actually arise from the Eichler-Shimura correspondence,
-not for arbitrary elements of the `Newform` type. -/
-axiom newform_nonzero {N : ℕ} (f : Newform N 2)
+Previously axiomatized; eliminated by strengthening the `Newform` type
+to carry a nonzero proof, which is mathematically correct (a newform is
+by definition a normalized eigenform, hence always nonzero). -/
+theorem newform_nonzero {N : ℕ} (f : Newform N 2)
     {p : ℕ} [Fact (Nat.Prime p)]
     (E : WeierstrassCurve ℚ)
-    (hmatch : galRepOfNewform f p = galRepOfCurve E p) :
-    f.toCuspForm ≠ 0
+    (_hmatch : galRepOfNewform f p = galRepOfCurve E p) :
+    f.toCuspForm ≠ 0 := f.ne_zero
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- §5. Full Descent to Level 2
@@ -245,7 +241,7 @@ theorem ribet_from_modularity_and_genus_proved (a b c : ℤ) (p : ℕ)
   • ribet_from_modularity_and_genus_proved [this file, §7]
     The old monolithic axiom, now a corollary of ribet_contradiction
 
-  AXIOMS (5, replacing 1 monolithic axiom):
+  AXIOMS (4, replacing 1 monolithic axiom):
   • ribet_level_lowering [§2]
     Ribet 1990. Single-prime level descent for mod-p representations.
     Deepest axiom here — requires Mazur's principle + Ihara's lemma.
@@ -254,13 +250,14 @@ theorem ribet_from_modularity_and_genus_proved (a b c : ℤ) (p : ℕ)
     Local analysis: Tate parametrization + p | v_ℓ(Δ) for the Frey curve.
     Provable in principle from the explicit discriminant formula.
 
-  • newform_nonzero [§4]
-    Normalized eigenforms have a₁ = 1 ≠ 0. Definitional in mathematics;
-    axiomatized because our Newform type doesn't enforce normalization.
-
   • frey_descent_to_level_2 [§5]
     Iteration of ribet_level_lowering over odd prime factors of rad(|abc|).
     Provable in principle by well-founded induction on ω(N).
+
+  PROVED (was axiom):
+  • newform_nonzero [§4]
+    Now derived from Newform.ne_zero field. The Newform type was strengthened
+    to carry a nonzero proof, matching the mathematical definition.
 
   OPAQUE (1):
   • IsUnramifiedAt [§1]
